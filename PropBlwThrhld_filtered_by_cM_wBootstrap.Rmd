@@ -1,0 +1,267 @@
+---
+title: "R Notebook"
+output:
+  html_document: default
+  html_notebook: default
+---
+```{r}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(tidyr)
+library(scales)
+library(grid)
+library(gridExtra)
+library(stringr)
+```
+
+```{r}
+require(bit64)
+```
+##################
+##################
+```{r functions}
+
+pct_int_thrhld.fn <- function(callset, min_window, sample_size){
+    dt.windows_pct_int <- data.table()
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+      dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases.cM')
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chrom','winstart','winend','queryable_bp',
+                                                      'introgressed_bp','cMstart','cMend','cM_Mb','pct_int','WinSize'))
+    dt.windows_pct_int <- rbind(dt.windows_pct_int, windows.introgressed_bases)
+  }
+    
+  pct_int_thrhld <- 
+    dt.windows_pct_int %>%
+    filter(chrom!='chrM', chrom!= 'chrX', chrom!='chrY') %>%
+    filter(cM_Mb <= 1.1 & cM_Mb >= 0.9) %>%
+    filter( (queryable_bp/(winend-winstart) ) >= 0.9) %>%
+    group_by(WinSize) %>%
+    summarise(percentile_99 = (quantile(pct_int, probs=0.01, na.rm=TRUE))) %>%
+    filter(WinSize=8) %>% select(percentile_99) %>% as.numeric()
+
+  return(pct_int_thrhld)
+# 99th percentil for 8Mb Window is pct_int < 0.000122
+}
+
+
+
+bootstrap.fn <- function(callset, sample_size, min_window, pct_int_thrhld){
+  dt.bootstrap.prop_blw_thrhld <- data.table()
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+    dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases.cM')
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chrom','winstart','winend','queryable_bp',
+                                                      'introgressed_bp','cMstart','cMend','cM_Mb','pct_int','WinSize'))
+    
+    
+    bs.windows.introgressed_bases <- sample_n(tbl = windows.introgressed_bases, size = nrow(windows.introgressed_bases), replace = TRUE)
+    #bs.windows.introgressed_bases <- sample_n(tbl = windows.introgressed_bases, size = 50, replace = TRUE)
+    
+    n_quer <- 
+      bs.windows.introgressed_bases %>%
+      filter(chrom!='chrM', chrom!= 'chrX', chrom!='chrY') %>%
+      mutate(count = 1) %>%
+      filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+      filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+      group_by(WinSize) %>%
+      summarize(n_queryable_cM = sum(count)) %>% select(n_queryable_cM) %>% as.numeric()
+    
+    n_blw_thrhld <- 
+      bs.windows.introgressed_bases %>%
+      filter(chrom!='chrM', chrom!= 'chrX', chrom!='chrY') %>%
+      mutate(count = 1) %>%
+      filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+      filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+      filter( pct_int <= pct_int_thrhld) %>%
+      group_by(WinSize) %>%
+      summarize(n_queryable_cM_blw_thrhld = sum(count)) %>% select(n_queryable_cM_blw_thrhld) %>% as.numeric()
+      
+    prop_blw_thrhld <- n_blw_thrhld/n_quer
+    
+    dt.bootstrap.prop_blw_thrhld <- rbind(dt.bootstrap.prop_blw_thrhld, data.table(winsize,n_quer,n_blw_thrhld,prop_blw_thrhld))
+  }
+  return(replace_na(dt.bootstrap.prop_blw_thrhld,list(n_blw_thrhld=0, prop_blw_thrhld=0)))
+}
+
+
+CI.95.fn <- function(reps, callset, sample_size, min_window, pct_int_thrhld){
+  dt.CI.95 <- data.table()
+  count <- 1
+  while(count<=reps){
+  #dt.bs <- bootstrap.fn(callset = 'callset_ALL.neand_ambig', sample_size = 2992+56)
+  dt.bs <- bootstrap.fn(callset = callset, sample_size = sample_size, min_window = min_window, pct_int_thrhld = pct_int_thrhld)
+  dt.CI.95 <- rbind(dt.CI.95, dt.bs)
+  count <- count+1
+  }
+  return(dt.CI.95)
+}
+
+
+Prop_blw_thrhld.fn <- function(callset, sample_size, min_window, pct_int_thrhld){
+  dt.prop_blw_thrhld <- data.table()
+#  for(winsize in seq(from=1, to = 15, by = 1)){
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+      dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases.cM')
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chrom','winstart','winend','queryable_bp',
+                                                      'introgressed_bp','cMstart','cMend','cM_Mb','pct_int','WinSize'))
+    n_quer <- 
+      windows.introgressed_bases %>%
+      filter(chrom!='chrM', chrom!= 'chrX', chrom!='chrY') %>%
+      mutate(count = 1) %>%
+      filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+      filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+      group_by(WinSize) %>%
+      summarize(n_queryable_cM = sum(count)) %>% select(n_queryable_cM) %>% as.numeric()
+    
+    n_blw_thrhld <- 
+      windows.introgressed_bases %>%
+      filter(chrom!='chrM', chrom!= 'chrX', chrom!='chrY') %>%
+      mutate(count = 1) %>%
+      filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+      filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+      filter( pct_int <= pct_int_thrhld) %>%
+      group_by(WinSize) %>%
+      summarize(n_queryable_cM_blw_thrhld = sum(count)) %>% select(n_queryable_cM_blw_thrhld) %>% as.numeric()
+      
+    prop_blw_thrhld <- n_blw_thrhld/n_quer
+    
+    dt.prop_blw_thrhld <- rbind(dt.prop_blw_thrhld, data.table(winsize,n_quer,n_blw_thrhld,prop_blw_thrhld))
+  }
+  
+  return(replace_na(data = dt.prop_blw_thrhld,list(n_blw_thrhld=0, prop_blw_thrhld=0))) 
+}
+```
+
+
+```{r pct_int_thrhld}
+
+pct_int_thrhld.fn(callset = 'callset_EUREAS', min_window = 1, sample_size = 2014)
+
+```
+
+
+```{r Prop_blw_thrhld}
+
+RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'callset_EUREAS',sample_size = 2014, min_window = 1, pct_int_thrhld = 0.00031623)
+
+```
+
+
+```{r  Bootstrap and 95CI}
+Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 100, callset = 'callset_EUREAS', sample_size = 2014, min_window = 1, pct_int_thrhld = 0.00031623)
+
+CI <- data.table()
+for( i in seq(from=1, to=15, by=1)){
+  ci <- Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld %>% quantile(probs=c(0.025, 0.975), na.rm=TRUE)
+  #ci <- t.test(Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld)$conf.int[1:2]
+  CI <- rbind(CI, data.table(winsize=i, lower=ci[1], upper=ci[2]))
+}
+CI <- replace_na(CI,list(lower=0, upper=0))
+```
+
+
+```{r}
+ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + geom_ribbon(data=CI,aes(x=winsize, ymin=lower, ymax=upper), fill="grey", alpha=0.75)
+
+ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + geom_ribbon(data=CI,aes(x=winsize, ymin=lower, ymax=upper), fill="grey", alpha=0.75) + coord_cartesian(xlim=c(5,10), ylim=c(0.0,0.1), expand = c(0,0))
+```
+
+
+
+######################
+######################
+######################
+```{r}
+# EUR_EAS windowed genomes, introgressed bp
+
+dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+callset <- 'callset_EUREAS'
+maxwin <- 15
+ dt <- data.table(NULL)
+ for(i in seq(1,as.numeric(maxwin),by = 1)){
+    print(paste0('Loading window size: ',i))
+    infile <- paste0(dir,'/',callset,'/','windows.',i,'MB.100kb.bed.introgressed_bases.cM')
+    dat <- fread(infile, 
+                 na.strings=c("NA", "None",'.'), 
+                col.names = c('chrom','winstart','winend','queryable_bp', 'introgressed_bp','cMstart','cMend','cM_Mb','pct_int','WinSize'))
+    dt <- rbind(dt, dat)
+ }
+windows.introgressed_bases.cM.dt <- dt
+
+windows.introgressed_bases.cM.dt <- filter(windows.introgressed_bases.cM.dt, chrom!='chrM', chrom!= 'chrX', chrom!='chrY')
+```
+
+```{r}
+#Calculate pct_int threshold for data based on 1cM/Mb filter
+pct_int_thrhld <- 
+  windows.introgressed_bases.cM.dt %>%
+  filter(cM_Mb <= 1.1 & cM_Mb >= 0.9) %>%
+  filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+  group_by(WinSize) %>%
+  summarise(percentile_99 = (quantile(pct_int, probs=0.01, na.rm=TRUE))) %>%
+  filter( WinSize=8) %>% select(percentile_99) %>% as.numeric()
+
+# 99th percentil for 8Mb Window is pct_int < 0.000122
+
+```
+
+```{r}
+
+count.queryable_windows.cM_Mb.dt <-
+windows.introgressed_bases.cM.dt %>%
+  mutate(count = 1) %>%
+  filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+  filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+  group_by(WinSize) %>%
+  summarize(n_queryable_cM = sum(count)) %>%
+  as.data.table()
+  
+count.queryable_windows.cM_Mb.blw_thrhld.dt <-
+windows.introgressed_bases.cM.dt %>%
+  mutate(count = 1) %>%
+  filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+  filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+  filter( pct_int <= pct_int_thrhld) %>%
+  group_by(WinSize) %>%
+  summarize(n_queryable_cM_blw_thrhld = sum(count)) %>%
+  as.data.table()
+
+prop_blw_thrhld.dt <- 
+  left_join(count.queryable_windows.cM_Mb.dt, count.queryable_windows.cM_Mb.blw_thrhld.dt, by='WinSize') %>% 
+  replace_na(list(n_queryable_cM_blw_thrhld = 0)) %>% 
+  as.data.table() %>% 
+  mutate(prop_blw_thrhld = n_queryable_cM_blw_thrhld/n_queryable_cM)
+
+prop_blw_thrhld.dt
+```
+
+
+
+
