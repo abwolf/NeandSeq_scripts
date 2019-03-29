@@ -1,0 +1,291 @@
+---
+title: "IBDmix Hi-Freq Neand Calls"
+author: "Aaron Wolf"
+date: "11/14/2018"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(scales)
+set.seed(1)
+```
+
+```{r multiplot function}
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+    library(grid)
+   
+   # Make a list from the ... arguments and plotlist
+   plots <- c(list(...), plotlist)
+   
+   numPlots = length(plots)
+   
+   # If layout is NULL, then use 'cols' to determine layout
+   if (is.null(layout)) {
+     # Make the panel
+     # ncol: Number of columns of plots
+     # nrow: Number of rows needed, calculated from # of cols
+     layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                      ncol = cols, nrow = ceiling(numPlots/cols))
+   }
+   
+   if (numPlots==1) {
+     print(plots[[1]])
+     
+   } else {
+     # Set up the page
+     grid.newpage()
+     pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+     
+     # Make each plot, in the correct location
+     for (i in 1:numPlots) {
+       # Get the i,j matrix positions of the regions that contain this subplot
+       matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+       
+       print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                       layout.pos.col = matchidx$col))
+     }
+   }
+ }
+```
+
+
+```{r load data, cache=TRUE}
+wenqing.unmasked.callset = fread('~/Documents/Dropbox/Temp/Altai.1KGP3.LOD4.30K.unmasked.txt', header=TRUE)
+
+Neand.depletions = fread('~/Documents/IntrogressionDepletions/Depletions.Neand.bed')
+setnames(Neand.depletions,c('chr','start','end'))
+Neand.depletions[,chr:=substr(chr, 4, 5)]
+
+Neand.Deni.depletions = fread('~/Documents/IntrogressionDepletions/Depletions.Neand_Denis.bed')
+setnames(Neand.Deni.depletions, c('chr','start','end'))
+Neand.Deni.depletions[,chr:=substr(chr,4,5)]
+
+depletion_genes = fread('~/Documents/IntrogressionDepletions/FixedDifferences/RefSeqGenes/DepletionGenes.chrALL.bed')
+setnames(depletion_genes, c('chr','start','end','Gene_Name'))
+depletion_genes = depletion_genes %>% group_by(Gene_Name, chr) %>% summarise(mean.start=mean(start), mean.end=mean(end))
+genes_of_interest = as.data.table(c('FOXP2','AMY2B','ROBO1','ROBO2','LYPLA1'))
+
+# genes_knownGenes = fread('~/Desktop//Gene_by_Deserts_100%Overlap/GenesInDeserts_knownGenes37_100%overlap.bed', verbose = TRUE, header = FALSE)
+# genes_knownGenes = setnames(genes_knownGenes, c('chr','start','stop','ID'))
+# genes_knownGenes.edit = genes_knownGenes[chr==c(1:22)]
+
+
+genes_refGenes = fread('~/Desktop/Gene_by_Deserts_100%Overlap/GenesInDeserts_refGenes37_100%overlap.bed', verbose = TRUE, header = FALSE)
+genes_refGenes = setnames(genes_refGenes, c('chr','start','stop','ID'))
+genes_refGenes.edit = genes_refGenes[chr==c(1:22)]
+genes_refGenes.edit = genes_refGenes %>% group_by(ID, chr) %>% summarise(mean.start=mean(start), mean.end=mean(stop))
+
+
+genes_allhg38 = fread('~/Desktop/humangenes_hg38.bed')
+genes_allhg38 = setnames(genes_allhg38, c('chr','start','end','ID'))
+genes_allhg38[,chr:=substr(chr,4,5)]
+genes_allhg38.edit = filter(genes_allhg38, chr=='14')
+#genes_allhg38.edit = genes_allhg38.edit %>% group_by(ID) %>% summarise, mean.start=mean(start), mean.end=mean(end))
+
+# gen.oi = data.table(NULL)
+# for (i in 1:5){
+#   oi.i = filter(depletion_genes, genes_of_interest[i,V1] %in% Gene_Name)
+#   gen.oi = rbind(gen.oi, oi.i)
+# }
+
+
+#create empty data table to place Wenqings calls in deserts into
+des.unmasked = data.table(NULL)
+gen.des = data.table(NULL)
+```
+
+```{r collect calls in deserts}
+for (i in 1:6){ 
+  des.i = filter(wenqing.unmasked.callset, chr==Neand.depletions$chr[i], start>=Neand.depletions$start[i], end<=Neand.depletions$end[i])
+  des.unmasked = rbind(des.unmasked, des.i)
+}
+
+#Arrange the desert list so AFR is at the top
+#and assign a new ID, so AFR are grouped together at the top of the plots
+des.unmasked = arrange(des.unmasked, anc, ID)
+des.unmasked[, ID.mod := .GRP, by = ID]
+```
+
+```{r collect genes in deserts}
+for (i in 1:6){ 
+  gen.i = filter(genes_refGenes.edit, chr==Neand.depletions$chr[i], mean.start>=Neand.depletions$start[i], mean.end<=Neand.depletions$end[i])
+  gen.des = rbind(gen.des, gen.i)
+}
+```
+
+
+```{r plot distribution of unmasked calls in deserts, fig.align='center'}
+
+ggplot() + 
+  geom_segment(data=filter(des.unmasked, anc!="AFR"), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc))) +
+  geom_segment(data=filter(des.unmasked, anc=="AFR"), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc))) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific)
+
+
+```
+
+
+```{r load masked callset}
+wenqing.masked.callset = fread('~/Documents/Dropbox/Temp/Altai.1KGP3.LOD4.30K.masked.txt')
+
+des.masked = data.table(NULL)
+
+for (i in 1:6){
+  des.i = filter(wenqing.masked.callset, chr==Neand.depletions$chr[i], start>=Neand.depletions$start[i], end<=Neand.depletions$end[i])
+  des.masked = rbind(des.masked, des.i)
+}
+
+des.masked = arrange(des.masked, anc, ID)
+
+des.masked[, ID.mod := .GRP, by = ID]
+```
+
+```{r plot distribution calls in deserts when data is also masked, fig.align='center'}
+
+ggplot() +
+  geom_segment(data=filter(des.masked, anc!="AFR"), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc))) +
+  geom_segment(data=filter(des.masked, anc=="AFR"), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc))) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  scale_x_continuous(labels=scientific)
+```
+
+
+```{r combine des.masked and des.unmaksed}
+des.masked[,masked:='yes']
+des.unmasked[,masked:='no']
+des.unmasked = select(des.unmasked, -No)
+names = names(des.masked)
+setnames(des.unmasked, names)
+des.masked.unmasked = rbind(des.masked, des.unmasked)
+```
+
+```{r, fig.align='center'}
+
+m = ggplot() + theme_bw() +
+  geom_rect(data=Neand.Deni.depletions, aes(xmin=start, xmax=end, ymin=0, ymax=2500), fill='grey', color='black', linetype='twodash', alpha=0.2) +
+  geom_segment(data=filter(des.masked.unmasked, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(des.masked.unmasked, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_rect(data=gen.des, aes(xmin=mean.start, xmax=mean.end, ymin=700, ymax=800), fill='blue', alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  ggtitle('Neandertal calls from by Fu w/ masking shared African variants') +
+  scale_x_continuous(labels=scientific)
+
+u = ggplot() + theme_bw() +
+  geom_rect(data=Neand.Deni.depletions, aes(xmin=start, xmax=end, ymin=0, ymax=2500), fill='grey', color='black', linetype='twodash', alpha=0.2) +
+  geom_segment(data=filter(des.masked.unmasked, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(des.masked.unmasked, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_rect(data=gen.des, aes(xmin=mean.start, xmax=mean.end, ymin=700, ymax=800), fill='blue', alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  ggtitle('Neandertal calls from by Fu w/o masking shared African variants') +
+  scale_x_continuous(labels=scientific)
+
+multiplot(m, u, cols = 1)
+
+###Plot just desert on chr7
+ggplot() + theme_bw() +
+  geom_rect(data=filter(Neand.Deni.depletions, chr=='7'), aes(xmin=start, xmax=end, ymin=0, ymax=1800), fill='lightgrey', color='black', linetype='twodash', alpha=0.1) +
+  geom_segment(data=filter(des.masked.unmasked, masked=='yes', chr=='7'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  #geom_segment(data=filter(des.masked.unmasked, masked=='no', chr=='7'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_rect(data=filter(gen.des, chr=='7'), aes(xmin=mean.start, xmax=mean.end, ymin=700, ymax=800), fill='blue', alpha=1) +
+  #facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  #ggtitle('Neandertal calls from by Fu w/ masking shared African variants') +
+  scale_x_continuous(labels=scientific) +
+  coord_cartesian(ylim=c(-200, 2000))
+
+
+
+```
+
+```{r test_gene windows ; how do deserts compare to random windows, fig.align='center'}
+
+test.gene.windows = fread('~/Documents/Dropbox/Temp/test.gene.windows2.bed',header=FALSE)
+setnames(test.gene.windows, c('chr','gene.start','gene.end','gene.name'))
+test.gene.windows[,chr:=substr(chr, 4, 5)]
+test.gene.windows = test.gene.windows %>% mutate(start=gene.start-5e6, end=gene.end+5e6)
+#Masked data callset
+test.gene.windows.masked.callset = data.table(NULL)
+for (i in 1:6){
+  callset.i = filter(wenqing.masked.callset, chr==test.gene.windows$chr[i], start>=test.gene.windows$start[i], end<=test.gene.windows$end[i])
+  test.gene.windows.masked.callset = rbind(test.gene.windows.masked.callset, callset.i)
+}
+
+#Unmasked data callset
+test.gene.windows.unmasked.callset = data.table(NULL)
+for (i in 1:6){
+  callset.i = filter(wenqing.unmasked.callset, chr==test.gene.windows$chr[i], start>=test.gene.windows$start[i], end<=test.gene.windows$end[i])
+  test.gene.windows.unmasked.callset = rbind(test.gene.windows.unmasked.callset, callset.i)
+}
+
+#Assign unique IDs
+test.gene.windows.unmasked.callset = arrange(test.gene.windows.unmasked.callset, anc, ID)
+test.gene.windows.unmasked.callset[, ID.mod := .GRP, by = ID]
+
+test.gene.windows.masked.callset = arrange(test.gene.windows.masked.callset, anc, ID)
+test.gene.windows.masked.callset[, ID.mod := .GRP, by = ID]
+
+
+test.gene.windows.unmasked.callset[,masked:='no']
+test.gene.windows.masked.callset[,masked:='yes']
+
+test.gene.windows.unmasked.callset = select(test.gene.windows.unmasked.callset, -No) %>% setnames(names(test.gene.windows.masked.callset))
+
+test.gene.windows.masked.unmasked.callset = rbind(test.gene.windows.unmasked.callset, test.gene.windows.masked.callset)
+```
+
+```{r plot of randomly selected windows}
+
+m = ggplot() + theme_bw() +
+  geom_segment(data=filter(test.gene.windows.masked.unmasked.callset, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(test.gene.windows.masked.unmasked.callset, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  ggtitle('Neandertal calls from by Fu w/ masking shared African variants') +
+  scale_x_continuous(labels=scientific)
+
+u = ggplot() + theme_bw() +
+  geom_segment(data=filter(test.gene.windows.masked.unmasked.callset, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(test.gene.windows.masked.unmasked.callset, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  ggtitle('Neandertal calls from by Fu w/o masking shared African variants') +
+  scale_x_continuous(labels=scientific)
+
+multiplot(m, u, cols = 1)
+
+
+###Plot just region around MNAT1
+ggplot() + theme_bw() +
+  geom_segment(data=filter(test.gene.windows.masked.unmasked.callset, masked=='yes', chr=='14'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(test.gene.windows.masked.unmasked.callset, masked=='no', chr=='14'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_rect(data=filter(genes_allhg38.edit, chr=='14', start>=56201459, end<=66435398), aes(xmin=start, xmax=end, ymin=700, ymax=800), fill='blue', alpha=1) +
+  #facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') + 
+  #geom_vline(xintercept = 61201459, linetype='dashed')
+  #ggtitle('Neandertal calls from by Fu w/ masking shared African variants') +
+  scale_x_continuous(labels=scientific)
+  
+```
+
+
+END
+
+
+
+
+
+
+
+
+
+
+
+

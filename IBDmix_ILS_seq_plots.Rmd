@@ -1,0 +1,87 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "12/17/2018"
+output: html_document
+---
+
+```{r}
+
+library(data.table)
+library(dplyr)
+library(ggplot2)
+
+
+
+```
+
+
+```{r}
+
+setwd('~/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0/test/')
+
+dt <- fread(' gunzip -c Sriram_modHum_190020913_n1_0.0_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0.bed.mod.gz', col.names = c('ID','strt','end')) %>%
+      mutate(len_kb=(end-strt)/1000) %>%
+      mutate(pop="ALL")
+
+dt.AFR <- fread(' gunzip -c Sriram_modHum_190020913_n1_0.0_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0.bed.mod_AFR.gz', col.names = c('ID','strt','end')) %>% 
+          mutate(len_kb=(end-strt)/1000) %>%
+          mutate(pop="AFR")
+dt.EUR <- fread(' gunzip -c Sriram_modHum_190020913_n1_0.0_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0.bed.mod_EUR.gz', col.names = c('ID','strt','end')) %>%
+          mutate(len_kb=(end-strt)/1000) %>%
+          mutate(pop="EUR")
+dt.ASN <- fread(' gunzip -c Sriram_modHum_190020913_n1_0.0_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0.bed.mod_ASN.gz', col.names = c('ID','strt','end')) %>%
+          mutate(len_kb=(end-strt)/1000) %>%
+          mutate(pop="ASN")
+
+dt.AFR %>% group_by(ID) %>% summarise(pct_ILS = sum(len_kb)/1000) %>% select(pct_ILS) %>% range()
+
+dt.EUR %>% group_by(ID) %>% summarise(pct_ILS = sum(len_kb)/1000) %>% select(pct_ILS) %>% range()
+
+dt.ASN %>% group_by(ID) %>% summarise(pct_ILS = sum(len_kb)/1000) %>% select(pct_ILS) %>% range()
+```
+
+
+
+```{r}
+
+dt.AFR.28k_100k <- dt.AFR %>% mutate(time_range="28k_100k")
+dt.EUR.28k_100k <- dt.EUR %>% mutate(time_range="28k_100k")
+dt.ASN.28k_100k <- dt.ASN %>% mutate(time_range="28k_100k")
+
+dt.AFR.28k_50k <- dt.AFR %>% mutate(time_range="28k_50k")
+dt.EUR.28k_50k <- dt.EUR %>% mutate(time_range="28k_50k")
+dt.ASN.28k_50k <- dt.ASN %>% mutate(time_range="28k_50k")
+
+dt.AFR.28k_40k <- dt.AFR %>% mutate(time_range="28k_40k")
+dt.EUR.28k_40k <- dt.EUR %>% mutate(time_range="28k_40k")
+dt.ASN.28k_40k <- dt.ASN %>% mutate(time_range="28k_40k")
+
+
+dt.AFR.28k_40k %>% select(len_kb) %>% range()
+dt.ASN.28k_40k %>% select(len_kb) %>% range()
+dt.EUR.28k_40k %>% select(len_kb) %>% range()
+
+```
+
+
+```{r}
+
+ggplot() +
+  geom_density(data=rbind(dt.AFR, dt.EUR, dt.ASN), aes(x=len_kb, fill=pop), alpha=0.5)
+
+ggplot() +
+  geom_density(data=rbind(dt.AFR.28k_50k, dt.EUR.28k_50k, dt.ASN.28k_50k), aes(x=len_kb, fill=pop), alpha=0.5)
+
+ggplot() +
+  geom_density(data=rbind(dt.AFR.28k_40k, dt.EUR.28k_40k, dt.ASN.28k_40k), aes(x=len_kb, fill=pop), alpha=0.5)
+
+```
+
+
+```{r}
+
+
+
+```
+

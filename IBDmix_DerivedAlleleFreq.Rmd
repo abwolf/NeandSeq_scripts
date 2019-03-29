@@ -1,0 +1,1115 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "1/22/2019"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(RColorBrewer)
+```
+
+
+```{r}
+
+names=c('chr','start','end','anc_allele','der_allele','code','AFR_AMR','AFR','AMR','EAS','EUR','PNG','SAS','Neand_call','Deni_call')
+
+
+
+IBDmix.EAS.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/test.chr*.EAScalls_IBDmix.derived_allele_freq',
+                                       col.names=c(names,'blnk')) %>%
+                                  mutate(source='IBDmix') %>%
+                                  mutate(d_EUR_EAS = (EUR-EAS))
+
+
+IBDmix.EUR.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/test.chr*.EURcalls_IBDmix.derived_allele_freq',
+                                       col.names=c(names,'blnk')) %>%
+                                  mutate(source='IBDmix') %>%
+                                  mutate(d_EUR_EAS = (EUR-EAS))
+
+
+IBDmix.EUREAS.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/test.chr*.EUR_EAScalls_IBDmix.derived_allele_freq',
+                                       col.names=c(names,'blnk')) %>%
+                                  mutate(source='IBDmix') %>%
+                                  mutate(d_EUR_EAS = (EUR-EAS))
+
+
+IBDmix.AFR.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/test.chr*.AFRcalls_IBDmix.derived_allele_freq',
+                                       col.names=c(names,'blnk')) %>%
+                                  mutate(source='IBDmix') %>%
+                                  mutate(d_AFR_EAS = (AFR-EAS)) %>%
+                                  mutate(d_AFR_EUR = (AFR-EUR))
+
+#########
+#########
+sstar.EAS.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/Sstar_2015/test.chr*.EAScalls_sstar.derived_allele_freq',
+                                       col.names=c(names,'blnk'))
+sstar.EAS.derived_allele_freq[,source:='sstar']
+
+
+sstar.EUR.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/Sstar_2015/test.chr*.EURcalls_sstar.derived_allele_freq',
+                                       col.names=c(names,'blnk'))
+sstar.EUR.derived_allele_freq[,source:='sstar']
+
+
+```
+
+
+
+```{r Calculate 99th Percentile for derived alleles}
+quantile(IBDmix.EAS.derived_allele_freq$d_EUR_EAS, c(0.99, 0.01))
+
+IBDmix.EAS.derived_allele_freq %>% filter(d_EUR_EAS < -0.1920624 | d_EUR_EAS > 0.1844024 ) %>% 
+  filter(AFR==0.0) %>% 
+  nrow()
+
+
+quantile(IBDmix.EUR.derived_allele_freq[der_allele==Neand_call]$d_EUR_EAS, c(0.99, 0.01))
+
+IBDmix.EUR.derived_allele_freq %>% filter(d_EUR_EAS > 0.18146 | d_EUR_EAS < -0.19237 ) %>% 
+  filter(AFR==0.0) %>% 
+  nrow()
+
+
+quantile(filter(IBDmix.EUREAS.derived_allele_freq, der_allele==Neand_call)$d_EUR_EAS, c(0.99, 0.01))
+quantile(filter(IBDmix.EUREAS.derived_allele_freq, der_allele==Neand_call)$AFR, c(0.01))
+
+IBDmix.EUREAS.derived_allele_freq %>% filter(d_EUR_EAS > 0.18220 | d_EUR_EAS < -0.19148 ) %>% 
+  filter(AFR==0.0) %>% 
+  filter(Neand_call==der_allele) %>%
+  nrow()
+
+
+quantile(filter(IBDmix.AFR.derived_allele_freq, der_allele==Neand_call)$d_AFR_EAS, c(0.99, 0.01))
+quantile(filter(IBDmix.AFR.derived_allele_freq, der_allele==Neand_call)$d_AFR_EUR, c(0.99, 0.01))
+IBDmix.AFR.derived_allele_freq %>%
+  filter(d_AFR_EAS > 0.5 | d_AFR_EAS < -0.5 ) %>%
+  filter(d_AFR_EUR > 0.5 | d_AFR_EUR < -0.5 ) %>%
+#  filter(AFR==0.0) %>%
+  filter(Neand_call==der_allele) %>%
+  nrow()
+
+```
+
+
+
+```{r Derived allele Percentile plots}
+
+ggplot() +
+  geom_point(data= IBDmix.EAS.derived_allele_freq %>% 
+                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+                 filter(AFR==0.0),
+             aes(x=EUR, y=EAS, color="EAS")) +
+  geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
+                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+                 filter(AFR==0.0),
+             aes(x=EUR, y=EAS, color="EUR"))
+
+
+ggplot() +
+  geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
+                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+                 filter(AFR<=0.00),
+             aes(x=EUR, y=EAS, color="EUR"))
+
+
+ggplot() +
+  geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
+                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ),
+             aes(x=EUR, y=EAS, color="EUR"))
+
+
+ggplot() +
+  geom_point(data= IBDmix.EUREAS.derived_allele_freq %>%
+                filter(Neand_call==der_allele) %>%
+                filter(d_EUR_EAS > 0.4 | d_EUR_EAS < -0.4 ) %>%
+                filter(AFR<=0.01),
+                #filter(),
+             aes(x=EUR, y=EAS)) +
+  scale_x_continuous(breaks = seq(0,1,by = 0.1), labels = seq(0,1,by = 0.1)) +
+  scale_y_continuous(breaks = seq(0,1,by = 0.1), labels = seq(0,1,by = 0.1)) +
+  coord_cartesian(xlim=c(0,1), ylim=c(0,1), expand = c(0.01,0.01)) +
+  theme(
+        plot.title=element_text(face="bold"),
+        axis.text=element_text(face="bold"),
+        axis.title=element_text(face="bold")
+  )
+
+
+ggplot() +
+  geom_point(data= IBDmix.AFR.derived_allele_freq %>%
+            filter(Neand_call==der_allele) %>%
+#            filter(d_AFR_EAS > 0.4 | d_AFR_EAS < -0.5 ) %>%
+ #           filter(d_AFR_EUR > 0.4 | d_AFR_EUR < -0.5 ) %>%
+           filter(),
+         aes(x=d_AFR_EUR, y=d_AFR_EAS), color="grey", alpha=0.5) +
+  geom_point(data= IBDmix.AFR.derived_allele_freq %>%
+                filter(Neand_call==der_allele) %>%
+                filter(d_AFR_EAS > 0.5 | d_AFR_EAS < -0.5 ) %>%
+                filter(d_AFR_EUR > 0.5 | d_AFR_EUR < -0.5 ) %>%
+               filter(),
+             aes(x=d_AFR_EUR, y=d_AFR_EAS), color="red") +
+  scale_x_continuous(breaks = seq(-1,1,by = 0.1), labels = seq(-1,1,by = 0.1)) +
+  scale_y_continuous(breaks = seq(-1,1,by = 0.1), labels = seq(-1,1,by = 0.1)) +
+  geom_hline(yintercept = c(0)) +
+  geom_vline(xintercept = c(0)) +
+  coord_cartesian(xlim=c(-1,1), ylim=c(-1,1)) +
+  #  scale_x_continuous(breaks = seq(0,1,by = 0.1), labels = seq(0,1,by = 0.1)) +
+ # scale_y_continuous(breaks = seq(0,1,by = 0.1), labels = seq(0,1,by = 0.1)) +
+  #coord_cartesian(xlim=c(0,1), ylim=c(0,1), expand = c(0.01,0.01)) +
+  theme(
+        plot.title=element_text(face="bold"),
+        axis.text=element_text(face="bold"),
+        axis.title=element_text(face="bold")
+  )
+
+
+```
+
+
+```{r}
+
+
+EUR_hifreq_derived <- 
+  IBDmix.EUREAS.derived_allele_freq %>%
+#  IBDmix.EUREAS.derived_allele_freq %>%
+  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+  filter(AFR<=0.01) %>%
+  filter(EUR > 0.5 & EAS< 0.1) %>%
+  as.data.table()
+#  nrow()
+#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+  
+   
+EAS_hifreq_derived <- 
+  IBDmix.EUREAS.derived_allele_freq %>%
+  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+  filter(AFR<=0.01) %>%
+  filter(EUR < 0.1 & EAS > 0.5) %>%
+  as.data.table()
+#  nrow()
+#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+
+
+EUREAS_hifreq_derived <-
+  IBDmix.EUREAS.derived_allele_freq %>%
+  filter(d_EUR_EAS > 0.4 | d_EUR_EAS < -0.4 ) %>%
+  filter(der_allele==Neand_call) %>%
+  filter(AFR<=0.01) %>%
+  filter( (EUR>0.4 & EAS<0.1) | (EAS>0.4 & EUR<0.1) ) %>%
+  # nrow()
+  as.data.table()
+#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+
+  
+dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed  ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed | sort-bed - | bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.bed -' , col.names = c(names, 'blnk','source','d_EUR_EAS','count'))
+
+
+AFR_hifreq_derived <- 
+  IBDmix.AFR.derived_allele_freq %>%
+  filter(d_AFR_EAS > 0.5 ) %>%
+  filter(d_AFR_EUR > 0.5 ) %>%
+  filter(der_allele==Neand_call) %>%
+#  nrow()
+  as.data.table()
+#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/AFR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE) 
+
+
+dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed | bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/AFR_hifreq_DerivedAlleles.bed -' , col.names = c(names, 'blnk','source','d_AFR_EAS', 'd_AFR_EUR', 'count'))
+
+
+```
+
+
+```{r}
+
+Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt', header=TRUE)
+
+color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+ancestry.levels <- c('AFR','EUR','EAS','SAS', 'AMR')
+ancestry.levels <- c('AFR','EUR','EAS')
+
+
+calls = Altai.2013.p_SingleArchaic %>% select(ID, chr, start, end, pop, anc) %>%
+        mutate(anc = factor(anc, levels = ancestry.levels)) %>%
+        filter(anc %in% c('AFR','EUR','EAS')) %>%
+        arrange(anc, pop, ID)
+calls[, ID.mod := .GRP, by = ID]
+
+
+Sstar.2016.callset =  fread('~/OLDAKEYLab/akey_vol2/bvernot/archaic_1kg_p3/data/call_set_2015.11.06/LL.callsetALL.mr_0.99.ALL_calls_by_hap.bed.merged.by_chr.bed.sorted',
+                           col.names = c('chr','start','end','c.ID.h','ID','anc','arch')) %>%
+                      filter(arch=='neand', anc %in% c('EAS', 'SAS', 'EUR'))
+
+Sstarcalls = Sstar.2016.callset %>% select(ID, chr, start, end, anc) %>%
+        mutate(anc = factor(anc, levels = ancestry.levels)) %>%
+        arrange(anc, ID)
+Sstarcalls[, ID.mod := .GRP, by = ID]
+
+
+Adaptive.2016.callset = fread('cat ~/DATALab/NeanderthalSeq/AdaptiveIntrogression/adaptive_introgressed_regions_*.txt | grep -v chromosome', header = FALSE,
+                              col.names = c('chr','start','end','freq1', 'freq2','freq3',
+                                            'freq4','freq5','freq6','freq7','tagSNPs_+_SNPsLD','haplo_len','haplo_chr',
+                                            'extended_LD_start','extended_LD_end','Nearest_Genes','GWAS_SNP','eQTL','FDR','arch'), na.strings = c("NA")) %>%
+  filter(arch=='neand' | arch=="") %>%
+  rowwise() %>% mutate(chr=as.numeric(strsplit(chr, split = 'r')[[1]][[2]])) %>%
+  as.data.table()
+
+
+GenePosNames = fread('gzcat ~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/RefSeqGenes.nobackup/Depletions.chrALL_FULL_RefSeqGeneIDs.gz', header=TRUE) %>%
+                rowwise() %>% mutate(hg19.knownGene.chrom=as.numeric(strsplit(hg19.knownGene.chrom, split = 'r')[[1]][[2]]))  %>%
+                filter(hg19.knownGene.chrom %in% seq(1,22,by = 1)) %>%
+                mutate(chr=hg19.knownGene.chrom) %>%
+                as.data.table()
+
+GenePosNames.uniq <- subset(GenePosNames,!duplicated(GenePosNames$hg19.kgXref.geneSymbol)) %>% filter(!grepl("LOC[0-9]",hg19.kgXref.geneSymbol))
+
+gwasSNPs <- fread( 'gzcat ~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/GWAS.nobackup/gwasdb_20150819_snp_trait.gz', header = TRUE)
+
+#########
+#########
+
+EUR_hifreq_derived %>% arrange(chr,start)
+
+EUREAS_hifreq_derived %>% arrange(chr,start)
+
+dt <- dt %>% filter(count>=10, Neand_call==der_allele) %>%  arrange(count)
+
+dt %>% arrange(desc(d_EUR_EAS), desc(count)) %>%
+  #filter(EUR < 0.05 & EAS < 0.05) %>% 
+  head()
+c <- 8
+st <- 82192717 - 500000
+ed <- 82192717 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed) 
+tp <- AFR_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+#tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+#tp <- rbind(tp,IBDmix.EAS.derived_allele_freq %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call, AFR < 0.01, d_EUR_EAS < 0.05 & d_EUR_EAS > -0.05))
+gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed) , P_VALUE <= 1.0e-8)
+#gws <- gwasSNPs %>% filter(CHR==c & POS %in% c(tp$start, tp$end), P_VALUE <= 1.0e-8)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+ # geom_rect(data=tg, aes(xmin=min(tg$extended_LD_start), xmax=max(tg$extended_LD_end), ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#   geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+# #  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+   geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  theme(    
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"))
+
+  
+dt <- anti_join(dt, tp, by=c('chr','start','end')) %>% as.data.table()
+
+
+#   ggplot() + theme_bw() +
+#   geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+#    geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) +
+# #  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+#   facet_wrap(~chr, scales = "free_x") +
+#   xlab('genomic_position') +
+#   scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+#   scale_color_manual(values = color.values) +
+#   ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+#   coord_cartesian(xlim=c(st, ed)) +
+#   geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+#   geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+# #  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+#   geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+#   theme()
+
+
+  
+```
+
+
+```{r Plots for journal}
+
+## ASXL3 ##
+c <- 18
+st <- 31158540 - 300000
+ed <- 31158540 + 300000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- AFR_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
+
+  ggplot() + theme_classic() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  xlab('Genomic Position') +
+  ylab('1000 Genomes Project Individuals') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
+  scale_color_manual(values = color.values) +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  theme(
+    legend.position='none',
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"),
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(face="bold", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15))
+
+
+  
+## TRIM55;CRH ##
+c <- 8
+st <- 67075544 - 300000
+ed <- 67075544 + 300000  
+
+  tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+  tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+  tp <- rbind(AFR_hifreq_derived, EUREAS_hifreq_derived, fill=TRUE) %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+  gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
+
+  ggplot() + theme_classic() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  xlab('Genomic Position') +
+  ylab('1000 Genomes Project Individuals') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
+  scale_color_manual(values = color.values) +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  theme(
+    legend.position='none',
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"),
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(face="bold", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15))
+  
+
+## POU2F3 ##
+c <- 11
+st <- 120154630 - 300000
+ed <- 120154630 + 300000 
+  
+  tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+  tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+  tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+  gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
+
+  ggplot() + theme_classic() +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)+25), color=NA, fill="grey", alpha=0.5) +
+  #geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=max(calls$ID.mod)+10, ymax=max(calls$ID.mod)+35), color=NA, fill="grey50", alpha=1) +
+    
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  xlab('Genomic Position') +
+  ylab('1000 Genomes Project Individuals') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
+  scale_color_manual(values = color.values) +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  theme(
+    legend.position='none',
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"),
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(face="bold", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15))
+    
+
+## TLR1|6|10 ##
+  
+  EUREAS_alt_hifreq_derived <- 
+  IBDmix.AFR.derived_allele_freq %>%
+  filter(d_AFR_EAS < -0.2 ) %>%
+  filter(d_AFR_EUR < -0.2 ) %>%
+  filter(AFR<0.005) %>%
+  filter(der_allele==Neand_call) %>%
+#  nrow()
+  as.data.table()
+  
+c <- 4
+st <- 38518643 - 500000
+ed <- 38518643 + 500000
+
+  tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+  tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed) %>% filter(!hg19.kgXref.geneSymbol %in% c("FLJ13197"))
+  tp <- rbind(EUREAS_hifreq_derived, EUREAS_alt_hifreq_derived, fill=TRUE) %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+  gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-8)
+
+  ggplot() + theme_classic() +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)+25), color=NA, fill="grey", alpha=0.5) +
+  #geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=max(calls$ID.mod)+10, ymax=max(calls$ID.mod)+35), color=NA, fill="grey50", alpha=1) +
+  
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  xlab('Genomic Position') +
+  ylab('1000 Genomes Project Individuals') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
+  scale_color_manual(values = color.values) +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  theme(
+    legend.position='none',
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"),
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(face="bold", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15))
+  
+```
+
+
+```{r hi-freq AFR and EUR haplotype not seen before with Sstar}
+
+## SLC7A1 ##
+c <- 13
+st <- 30100040 - 500000
+ed <- 30100040 + 500000
+
+## OXGR1 ; AFR Specific##
+c <- 13
+st <- 97692062 - 500000
+ed <- 97692062 + 500000
+
+## RPRD1B ; AFR Specific ##
+c <- 20
+st <- 36687116 - 500000
+ed <- 36687116 + 500000
+
+## ACOX3 ##
+c <- 4
+st <- 8381036 - 500000
+ed <- 8381036 + 500000
+
+## ZNF486 ##
+c <- 19
+st <- 20366376 - 500000
+ed <- 20366376 + 500000
+
+## KLHL7 ##
+c <- 7
+st <- 23186451 - 500000
+ed <- 23186451 + 500000
+
+## PRKAG2 ##
+c <- 7
+st <- 151272463 - 500000
+ed <- 151272463 + 500000
+
+## LCE6A ; assoc w/ periodontitis  ; AFR specific##
+c <- 1
+st <- 152820082 - 500000
+ed <- 152820082 + 500000
+
+####
+c <- 9
+st <- 108443331 - 500000
+ed <- 108443331 + 500000
+
+## PAK1IP1 ##
+c <- 6
+st <- 10687745 - 500000
+ed <- 10687745 + 500000
+
+## CNR1;SPACA1 ##
+c <- 6
+st <- 88895421 - 500000
+ed <- 88895421 + 500000
+
+## TRIM55;CRH ##
+c <- 8
+st <- 67075544 - 300000
+ed <- 67075544 + 300000
+
+##FABP5##
+c <- 8
+st <- 82208482 - 500000
+ed <- 82208482 + 500000
+
+## ASXL3 ##
+c <- 18
+st <- 31158540 - 500000
+ed <- 31158540 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- AFR_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+#tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+#gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(min(tp$start), max(tp$end)), P_VALUE <= 1.0e-5)
+gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
+
+#plot.IBDmix <- 
+  ggplot() + theme_classic() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+#  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+#  facet_wrap(~chr, scales = "free_x") +
+  xlab('Genomic Position') +
+  ylab('Samples') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific) +
+  scale_color_manual(values = color.values) +
+#  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=4, check_overlap = TRUE , angle=45, nudge_y = 30) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  theme(
+    legend.position='none',
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"),
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    panel.border = element_rect(colour = "black", fill=NA, size=5),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(face="bold", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15))
+  
+  
+  
+  
+  
+  
+  
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+#  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; Sstar Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+
+
+
+
+
+```{r Hifreq haplotype in EUR masked by YRI haplotype}
+
+
+dt %>% arrange(desc(count)) %>% filter(AFR>=0.02) %>% head()
+
+c <- 9
+st <- 90648396 - 500000
+ed <- 90648396 + 500000
+
+c <- 12
+st <- 118918558 - 500000
+ed <- 118918558 + 500000
+
+c <- 12
+st <- 28214088 - 500000
+ed <- 28214088 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(min(tp$start), max(tp$end)), P_VALUE <= 1.0e-8)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+#  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; Sstar Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+
+
+
+```{r Hifreq Snp near Pou3F1 missed by masking in Sstar}
+
+
+c <- 1
+st <- 38670258 - 500000
+ed <- 38670258 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(min(tp$start), max(tp$end)), P_VALUE <= 1.0e-5)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+
+```
+
+
+
+```{r We miss OCA2}
+
+
+dt <- Adaptive.2016.callset
+
+dt %>% arrange(desc(GWAS_SNP)) %>% head()
+c <- 15
+st <- 28160571 - 500000
+ed <- 28177529 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+#  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+#  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+#  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+
+```
+
+
+
+
+
+```{r NLRC5 in EAS assoc w/ inflamation}
+
+
+c <- 16
+st <- 57067446 - 500000
+ed <- 57067446 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+
+
+
+```{r Replicate SIPA1L2 finding in EAS assoc w/ Parkinson's Disease in Han Chinese}
+
+c <- 1
+st <- 232603150 - 500000
+ed <- 232603150 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+#  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+#  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  theme()
+  
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; Sstar Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+
+
+
+```{r Recapitulate POU2F3 finding}
+
+dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed  ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed | sort-bed - | bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.bed -' , col.names = c(names, 'blnk','source','d_EUR_EAS','count'))
+dt %>% filter(count>=10, Neand_call==der_allele) %>%  arrange(count)
+
+
+c <- 11
+st <- 120154630 - 500000
+ed <- 120154630 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed, hg19.kgXref.geneSymbol != 'LOC649133', hg19.kgXref.geneSymbol != 'TRIM29')
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  #geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45, nudge_x = 15000) +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+ geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  theme()
+
+  
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; Sstar Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+  
+  
+```
+
+```{r Recapitulate WDR88 finding}
+
+
+dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed  ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed | sort-bed - | bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.bed -' , col.names = c(names, 'blnk','source','d_EUR_EAS','count'))
+dt %>% filter(count>=10, Neand_call==der_allele) %>%  arrange(count)
+
+c <- 19
+st <- 33605311 - 500000
+ed <- 33605311 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed, eQTL==1)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+#  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(eQTL)), size=3) +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+  
+
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; Sstar Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+  
+
+```
+
+```{r Recapitulate TLR finding w/ African samples as GWD}
+
+c <- 4
+st <- 38518643 - 500000
+ed <- 38518643 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed, GWAS_SNP==1)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(min(tp$start), max(tp$end)), P_VALUE <= 1.0e-5)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+#  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+#  geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  theme(    
+    plot.title=element_text(face="bold"),
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"))
+
+  
+
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) +
+  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)), size=1, linetype="dashed", color="black", fill=NA) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; Sstar Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+
+
+```{r IGF EUR specific adaptation}
+
+c <- 14
+st <- 106249963 - 500000
+ed <- 106249963 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific, breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+
+
+```{r SNORD81 EUR specific haplotype}
+
+c <- 12
+st <- 54195032 - 500000
+ed <- 54195032 + 500000
+
+tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+
+#plot.IBDmix <- 
+  ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+   geom_rect(data=filter(calls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific, breaks = seq(st,ed,by = 100000)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st, ed)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
+  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+  theme()
+
+```
+

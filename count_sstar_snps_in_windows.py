@@ -34,8 +34,10 @@ for line in infile:
 	if Afr_der_allele_freq==0.0:
 		#if EAS_der_allele_freq!=0 and EUR_der_allele_freq!=0 and SAS_der_allele_freq!=0 and PNG_der_allele_freq!=0:
 		if EAS_der_allele_freq!=0 or EUR_der_allele_freq!=0 or SAS_der_allele_freq!=0 or PNG_der_allele_freq!=0:
-			print(chrom+'\t'+start+'\t'+stop, file=sys.stdout)
-			AFR_count+=1
+			if Neand_base in ['A','C','T','G']:
+				#print(chrom+'\t'+start+'\t'+stop, file=sys.stdout)
+				print(line.strip(), file=sys.stdout)
+				AFR_count+=1
 
 print('nonAFR_count: ', nonAFR_count, 'AFR_count: ',AFR_count, file=sys.stderr)
 print('END', file=sys.stderr)

@@ -1,0 +1,569 @@
+---
+title: "HeatMapGenerator: Prop_Blw_Thrhld for Simulations"
+author: "Aaron Wolf"
+date: "6/16/2017"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(Metrics)
+library(scales)
+library(LaplacesDemon)
+library(gridExtra)
+library(grid)
+```
+
+```{r load prop_blw_thrhld data}
+##########
+## SplitPop Data
+# SP.ALL.prop_blw_thrhld = fread('~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/SplitPop_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+#                                header=FALSE,
+#                                colClasses = c("character", "integer", "integer","numeric","numeric","numeric","character"))
+# setnames(SP.ALL.prop_blw_thrhld, c('Mdl','Winsize','sum_tally','prop_blw_thrhld','n1','n2','admix'))
+# SP.ALL.prop_blw_thrhld <- filter(SP.ALL.prop_blw_thrhld,admix!='0_0')
+
+SP.ALL.prop_blw_thrhld = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2018_01_08//SplitPop_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+  input = '~/DATALab/SimulatedDemographic/msprime/SplitPop/3046/SplitPop_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+  header=FALSE,
+  colClasses = c("character", "integer", "integer","numeric","numeric","numeric","character"))
+setnames(SP.ALL.prop_blw_thrhld, c('Mdl','Winsize','sum_tally','prop_blw_thrhld','n1','n2','admix'))
+SP.ALL.prop_blw_thrhld <- filter(SP.ALL.prop_blw_thrhld,admix!='0_0')
+
+
+
+##########
+## Tennessen data
+Tn.ALL.prop_blw_thrhld = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/Tenn_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+  input = '~/DATALab/SimulatedDemographic/msprime/Tenn/3046/Tenn_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+  header=FALSE,
+  colClasses = c("character", "integer", "integer","numeric","numeric","numeric","character"))
+setnames(Tn.ALL.prop_blw_thrhld, c('Mdl','Winsize','sum_tally','prop_blw_thrhld','n1','n2','admix'))
+Tn.ALL.prop_blw_thrhld <- filter(Tn.ALL.prop_blw_thrhld,admix!='0_0')
+
+##########
+## Sriram Data
+Sr.ALL.prop_blw_thrhld = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/Sriram_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+  input = '~/DATALab/SimulatedDemographic/msprime/Sriram/3046/Sriram_nonAfr_ALL_n1_ALL_n2_ALL.bed.merged.5_to_10Mb.prop_blw_thrhld',
+  header=FALSE,
+  colClasses = c("character", "integer", "integer","numeric","numeric","numeric","character"))
+setnames(Sr.ALL.prop_blw_thrhld, c('Mdl','Winsize','sum_tally','prop_blw_thrhld','n1','n2','admix'))
+Sr.ALL.prop_blw_thrhld <- filter(Sr.ALL.prop_blw_thrhld,admix!='0_0')
+
+###########
+## Real Data
+Real.windows = fread('~/Documents/Dropbox/Temp/DesertSimulations/Count_windows_blw_thrhld_EUREAS.txt', header=FALSE)
+setnames(Real.windows, c('Winsize','count','sum_tally','prop_blw_thrhld'))
+Real.windows.95CI = fread('~/Documents/Dropbox/Temp/DesertSimulations/Vernot_Sci2016_windows_cutoff316_prop_blw_thrhld_95CI_EUREAS.txt', header=TRUE)
+```
+
+```{r load F4alpha data}
+
+Tenn.F4alpha.a = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/F4stat.Tenn.n1_ALL_n2_ALL_t_350_ALL',
+  input = '~/DATALab/SimulatedDemographic/msprime/F4stat/Tenn/3046/F4stat.Tenn.n1_ALL_n2_ALL_t_350_ALL',
+  sep='\t',
+  select = 2:3,
+  col.names = c('n1','n2') )
+
+Tenn.F4alpha.b = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/F4stat.Tenn.n1_ALL_n2_ALL_t_350_ALL',
+  input = '~/DATALab/SimulatedDemographic/msprime/F4stat/Tenn/3046/F4stat.Tenn.n1_ALL_n2_ALL_t_350_ALL',
+  sep=' ',
+  sep2 =' ',
+  #header=FALSE,
+  select = 2:12,
+  col.names = c('A1','O1','X','C1',':','A2','O2','B','C2','alpha','stderr'))
+
+Tenn.F4alpha <- cbind(Tenn.F4alpha.b, Tenn.F4alpha.a)
+Tenn.F4alpha$admix <- paste(Tenn.F4alpha$n1,sep = "_",Tenn.F4alpha$n2)
+rm(Tenn.F4alpha.a, Tenn.F4alpha.b)
+#############
+#############
+
+Sriram.F4alpha.a = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/F4stat.Sriram.n1_ALL_n2_ALL_t_350_ALL',
+  input = '~/DATALab/SimulatedDemographic/msprime/F4stat/Sriram/3046/F4stat.Sriram.n1_ALL_n2_ALL_t_350_ALL',
+  sep='\t',
+  select = 2:3,
+  col.names = c('n1','n2') )
+
+Sriram.F4alpha.b = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2017_11_06/F4stat.Sriram.n1_ALL_n2_ALL_t_350_ALL',
+  input = '~/DATALab/SimulatedDemographic/msprime/F4stat/Sriram/3046/F4stat.Sriram.n1_ALL_n2_ALL_t_350_ALL',
+  sep=' ',
+  sep2 =' ',
+  #header=FALSE,
+  select = 2:12,
+  col.names = c('A1','O1','X','C1',':','A2','O2','B','C2','alpha','stderr'))
+
+Sriram.F4alpha <- cbind(Sriram.F4alpha.b, Sriram.F4alpha.a)
+Sriram.F4alpha$admix <- paste(Sriram.F4alpha$n1,sep = "_",Sriram.F4alpha$n2)
+rm(Sriram.F4alpha.a, Sriram.F4alpha.b)
+############
+############
+
+SplitPop.F4alpha.a = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2018_01_08/F4stat.SplitPop.n1_ALL_n2_ALL_t_350_ALL',
+  input = '~/DATALab/SimulatedDemographic/msprime/F4stat/SplitPop/3046/F4stat.SplitPop.n1_ALL_n2_ALL_t_350_ALL',
+  sep='\t',
+  select = 2:3,
+  col.names = c('n1','n2') )
+
+SplitPop.F4alpha.b = fread(
+  #input = '~/Documents/Dropbox/Temp/DesertSimulations/2018_01_08/F4stat.SplitPop.n1_ALL_n2_ALL_t_350_ALL',
+  input = '~/DATALab/SimulatedDemographic/msprime/F4stat/SplitPop/3046/F4stat.SplitPop.n1_ALL_n2_ALL_t_350_ALL',
+  sep=' ',
+  sep2 =' ',
+  #header=FALSE,
+  select = 2:12,
+  col.names = c('A1','O1','X','C1',':','A2','O2','B','C2','alpha','stderr'))
+
+SplitPop.F4alpha <- cbind(SplitPop.F4alpha.b, SplitPop.F4alpha.a)
+SplitPop.F4alpha$admix <- paste(SplitPop.F4alpha$n1,sep = "_",SplitPop.F4alpha$n2)
+rm(SplitPop.F4alpha.a, SplitPop.F4alpha.b)
+```
+
+
+```{r calculate meanSE}
+
+## FUNCTION ##
+calculate_meanSE_fn = function(dt.prop_blw_thrhld, Real.windows){
+  dt.meanSE = data.table()
+  for( i in unique( dt.prop_blw_thrhld$admix ) ){
+  print(i)
+  dt.predicted = filter(dt.prop_blw_thrhld, Winsize>=5, Winsize<= 10, admix==i)
+  vc.predicted = dt.predicted$prop_blw_thrhld
+  vc.actual = filter(Real.windows, 5<=Winsize, Winsize<=10)$prop_blw_thrhld
+  #print( c(i, mse(actual = vc.actual, predicted = vc.predicted)) )
+  dt.mse = data.table(n1 = unique(filter(dt.prop_blw_thrhld, Winsize>=5, Winsize<= 10, admix==i)$n1),
+                      n2 = unique(filter(dt.prop_blw_thrhld, Winsize>=5, Winsize<= 10, admix==i)$n2),
+                      mse = mse(actual = vc.actual, predicted = vc.predicted))
+  dt.meanSE = rbind(dt.meanSE, dt.mse)
+  }
+  return(dt.meanSE)
+}
+
+####
+
+## SplitPop model, calculating MSE 
+dt.SP.meanSE = calculate_meanSE_fn(dt.prop_blw_thrhld = SP.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+
+#############
+## Tennessen model, calculating MSE
+dt.Tn.meanSE = calculate_meanSE_fn(dt.prop_blw_thrhld = Tn.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+
+
+##########
+## Sriram model, calculating MSE
+dt.Sr.meanSE = calculate_meanSE_fn(dt.prop_blw_thrhld = Sr.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+```
+
+
+```{r calculate KLD}
+## Kullback-Leibler Divergence:
+## In bayesian form: measure of information lost when using prior probability distribution Q to approximate the posterior probaility distribution P
+## KLD[ P || Q ] --> KLD[ p(y) || p(x) ]
+## Q = theoretical/modeled distribution ; P = true distribution of the data
+## GOAL: Minimize the KLD
+## NOTE: KLD is no a symmetric measure. i.e. KLD[ P || Q ] != KLD[ Q || P ]
+
+## FUNCTION ##
+calculate_KLD_fn = function(dt.prop_blw_thrhld, Real.windows){
+dt.Kulback_Leibler = data.table()
+for( i in unique( dt.prop_blw_thrhld$admix ) ){
+  print(i)
+  dt.predicted = filter(dt.prop_blw_thrhld, Winsize>=5, Winsize<= 10, admix==i)
+  
+  dt.empty = data.table()
+  for(z in seq(5,10)){
+    dt.empty = rbind(dt.empty, data.table(Mdl=unique(dt.predicted$Mdl),
+                                          Winsize=z,
+                                          sum_tally=0,
+                                          prop_blw_thrhld=0,
+                                          n1=unique(dt.predicted$n1),
+                                          n2=unique(dt.predicted$n2),
+                                          admix=unique(dt.predicted$admix)))
+  }
+  if( nrow(dt.predicted) < 6){
+    dt.empty = anti_join(dt.empty, select(dt.predicted, Mdl, Winsize))
+    dt.predicted = rbind(dt.predicted, dt.empty)
+  }
+  
+  vc.predicted = dt.predicted$prop_blw_thrhld
+  vc.actual = filter(Real.windows, 5<=Winsize, Winsize<=10)$prop_blw_thrhld
+  #print( c(i, mse(actual = vc.actual, predicted = vc.predicted)) )
+  dt.kld = data.table(n1 = unique(dt.predicted$n1),
+                      n2 = unique(dt.predicted$n2),
+                      #kld = KLD(py = vc.actual, px = vc.predicted)$sum.KLD.py.px )
+                      #kld = min(KLD( py = vc.actual, px = vc.predicted)$mean.KLD ))
+                      kld = min((KLD(py = vc.actual, px = vc.predicted)$KLD.py.px)^2) )
+  dt.Kulback_Leibler = rbind(dt.Kulback_Leibler, dt.kld)
+}
+return(dt.Kulback_Leibler)
+}
+####
+
+#############
+## SplitPop model, calculating KLD 
+dt.SP.kld = calculate_KLD_fn(dt.prop_blw_thrhld = SP.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+
+#############
+## Tennessen model, calculating KLD
+dt.Tn.kld = calculate_KLD_fn(dt.prop_blw_thrhld = Tn.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+
+#############
+## Sriram model, calulating KLD
+dt.Sr.kld = calculate_KLD_fn(dt.prop_blw_thrhld = Sr.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+
+```
+
+
+
+```{r calculate K-S test}
+## Kolmogorov-Smirnov test
+## A non-parametric test of the equality of continuous one-dimensional probability distributions 
+## to compare a sample with a reference probability distribution.
+## NULL HYPOTHESIS: sample is drawn from the reference distribution
+## Dn = supremma | Fn(x) - F(x) |
+## supremma = the least-upper-bound, i.e. the upper bound of a data set that actually falls in the set --> supremma of {1,2,3} = 3, even though 4 is technically an upperbound
+## K-S test is sensitive to differences in both the location and shape of distribution functions of 2 samples
+
+## FUNCTION ##
+calculate_KS_fn = function(dt.prop_blw_thrhld, Real.windows){
+  dt.Kolmogorov_Smirnov = data.table()
+  for( i in unique( dt.prop_blw_thrhld$admix ) ){
+  print(i)
+  dt.predicted = filter(dt.prop_blw_thrhld, Winsize>=5, Winsize<= 10, admix==i)
+  
+  dt.empty = data.table()
+  for(z in seq(5,10)){
+    dt.empty = rbind(dt.empty, data.table(Mdl=unique(dt.predicted$Mdl),
+                                          Winsize=z,
+                                          sum_tally=0,
+                                          prop_blw_thrhld=0,
+                                          n1=unique(dt.predicted$n1),
+                                          n2=unique(dt.predicted$n2),
+                                          admix=unique(dt.predicted$admix)))
+  }
+  if( nrow(dt.predicted) < 6){
+    dt.empty = anti_join(dt.empty, select(dt.predicted, Mdl, Winsize))
+    dt.predicted = rbind(dt.predicted, dt.empty)
+  }
+  
+  vc.predicted = dt.predicted$prop_blw_thrhld
+  vc.actual = filter(Real.windows, 5<=Winsize, Winsize<=10)$prop_blw_thrhld
+  #print( c(i, mse(actual = vc.actual, predicted = vc.predicted)) )
+  dt.ks = data.table(n1 = unique(dt.predicted$n1),
+                      n2 = unique(dt.predicted$n2),
+                      ks = ks.test(x = vc.predicted, y = vc.actual, alternative = "two.sided")$statistic ) #$p.value )
+  dt.Kolmogorov_Smirnov = rbind(dt.Kolmogorov_Smirnov, dt.ks)
+  }
+  return(dt.Kolmogorov_Smirnov)
+}
+####
+
+#############
+## SplitPop model, calculating KS
+dt.SP.ks = calculate_KS_fn(dt.prop_blw_thrhld = SP.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+
+#############
+## Tennessen model, calculating KS
+dt.Tn.ks = calculate_KS_fn(dt.prop_blw_thrhld = Tn.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+  
+#############
+## Sriram model, calculating KS
+dt.Sr.ks = calculate_KS_fn(dt.prop_blw_thrhld = Sr.ALL.prop_blw_thrhld, Real.windows = Real.windows)
+  
+```
+
+
+```{r HeatMap grapher MSE}
+## Plots colors as rescaled log(mse), so darker colors signify more error between model and real data
+## Includes mse values on plot
+
+dt.meanSE <- dt.SP.meanSE
+
+SE <- ggplot(data = dt.meanSE, aes(x = n1, y = n2)) + 
+  geom_tile(aes(fill = rescale(log(mse))), color="black", width=0.008, height=0.008) + 
+  scale_fill_gradient2(low="white", high="steelblue", space = "Lab", guide = "colourbar") + 
+  geom_text((aes(x = n1, y = n2, label=scientific(x = mse, 3))), color="black", size=2) + 
+  coord_cartesian(xlim = c(0.00,0.20), ylim = c(0.00,0.1)) +
+  scale_y_continuous(breaks = seq(0.0,0.10, 0.01)) + 
+  scale_x_continuous(breaks = seq(0.0,0.20, 0.01)) +
+  ggtitle(label = 'MSE of Proportion of Windows Depleted:\nSimulatedData v. RealData') +
+  xlab(label = 'Archaic_Pulse1 Admixture Proportion') +
+  ylab(label = 'Archaic_Pulse2 Admixture Proportion') +
+  theme(legend.position="none") +
+  theme( panel.grid.minor = element_blank(), #element_line(color="grey"),
+         panel.background = element_blank(),
+         panel.grid.major = element_blank(), 
+         panel.border=element_blank(), 
+         axis.ticks = element_blank() )
+
+```
+
+
+```{r HeatMap grapher KLD}
+## Plots colors as rescaled -log(KLD), so darker means more minimized KLD, i.e. better fit between model and empirical data
+## Includes mse values on plot
+
+dt.kld <- dt.SP.kld
+
+KLD <- ggplot(data = dt.kld, aes(x = n1, y = n2)) + 
+  geom_tile(aes(fill = rescale(-log(kld))), color="black", width=0.008, height=0.008) + 
+  scale_fill_gradient2(low="white", high="steelblue", space = "Lab", guide = "colourbar") + 
+  geom_text((aes(x = n1, y = n2, label=scientific(x = kld, 3))), color="black", size=2) + 
+  coord_cartesian(xlim = c(0.00,0.20), ylim = c(0.00,0.1)) +
+  scale_y_continuous(breaks = seq(0.0,0.10, 0.01)) + 
+  scale_x_continuous(breaks = seq(0.0,0.20, 0.01)) +
+  ggtitle(label = 'KLD of Proportion of Windows Depleted:\nSimulatedData v. RealData') +
+  xlab(label = 'Archaic_Pulse1 Admixture Proportion') +
+  ylab(label = 'Archaic_Pulse2 Admixture Proportion') +
+  theme(legend.position="none") +
+  theme( panel.grid.minor = element_blank(), #element_line(color="grey"),
+         panel.background = element_blank(),
+         panel.grid.major = element_blank(), 
+         panel.border=element_blank(), 
+         axis.ticks = element_blank() )
+
+```
+
+
+```{r HeatMap grapher KS-test}
+## Plots colors as rescaled  1/(KS test statistic value) , so darker means more minimized KS, i.e. better fit between model and empirical data
+## Includes mse values on plot
+
+dt.ks <- dt.SP.ks
+
+KS <- ggplot(data = dt.ks, aes(x = n1, y = n2)) + 
+  geom_tile(aes(fill = rescale(1/(ks))), color="black", width=0.008, height=0.008) + 
+  scale_fill_gradient2(low="white", high="steelblue", space = "Lab", guide = "colourbar") + 
+  geom_text((aes(x = n1, y = n2, label=scientific(x = ks, 3))), color="black", size=2) + 
+  coord_cartesian(xlim = c(0.00,0.20), ylim = c(0.00,0.1)) +
+  scale_y_continuous(breaks = seq(0.0,0.10, 0.01)) + 
+  scale_x_continuous(breaks = seq(0.0,0.20, 0.01)) +
+  ggtitle(label = 'KS of Proportion of Windows Depleted:\nSimulatedData v. RealData') +
+  xlab(label = 'Archaic_Pulse1 Admixture Proportion') +
+  ylab(label = 'Archaic_Pulse2 Admixture Proportion') +
+  theme(legend.position="none") +
+  theme( panel.grid.minor = element_blank(), #element_line(color="grey"),
+         panel.background = element_blank(),
+         panel.grid.major = element_blank(), 
+         panel.border=element_blank(), 
+         axis.ticks = element_blank() )
+
+```
+
+
+```{r HeatMap grapher Prop_blw_thrhld}
+## Plots colors as log(prop_blw_thrhld), so darker colors means less introgression (i.e. more windows below thrhld ; higher prop_blw_thrhld)
+## Includes prop_blw_thrhld values on plot
+
+dt.prop_blw_thrhld <- Tn.ALL.prop_blw_thrhld
+
+p_b_t <- ggplot(data = dt.prop_blw_thrhld, aes(x = n1, y = n2)) + 
+  geom_tile(aes(fill = rescale(log(prop_blw_thrhld))), color="black", width=0.008, height=0.008) + 
+  scale_fill_gradient2(low="white", high="steelblue", space = "Lab", guide = "colourbar") + 
+  geom_text(aes(x = n1, y = n2, label=prop_blw_thrhld), color="black", size=2) + 
+  coord_cartesian(xlim = c(0.00,0.20), ylim = c(0.00,0.1)) +
+  scale_y_continuous(breaks = seq(0.0,0.10, 0.01)) + 
+  scale_x_continuous(breaks = seq(0.0,0.20, 0.01)) +
+  ggtitle(label = 'Proportion of Windows Depleted of Introgression') +
+  xlab(label = 'Archaic_Pulse1 Admixture Proportion') +
+  ylab(label = 'Archaic_Pulse2 Admixture Proportion') +
+  facet_wrap(~ Winsize) +
+  theme( panel.grid.minor = element_blank(), #element_line(color="grey"),
+         panel.background = element_blank(),
+         panel.grid.major = element_blank(), 
+         panel.border = element_blank(), 
+         axis.ticks = element_blank() )
+
+```
+
+
+```{r LineGraph grapher}
+
+##### TARGET SIMS #####
+SP.target_sims <- unique(c("0.07_0.1", "0.05_0.1","0.04_0.1", "0.03_0.1", "0.03_0.1"))
+SP.target_sims <- unique(c("0.1_0.1", "0.05_0.1", "0.04_0.1"))
+SP.target_sims <- unique(c("0.1_0.1"))
+SP.target_sims <- unique(filter(SP.ALL.prop_blw_thrhld, prop_blw_thrhld < 0.03 & prop_blw_thrhld > 0.01)$admix)
+SP.target_sims <- unique(c("0.1_0.1", "0.04_0.1", "0.05_0.1", "0.07_0.1", "0.15_0.1", "0.2_0.07"))
+
+Tn.target_sims <- unique(c("0_0.05", "0.01_0.05", "0.04_0.02", "0_0.1", "0.04_0.02", "0.03_0.04", "0.03_0.05"))
+Tn.target_sims <- unique(c("0.02_0.07"))
+Tn.target_sims <- unique(filter(Tn.ALL.prop_blw_thrhld, prop_blw_thrhld < 0.03 & prop_blw_thrhld > 0.01)$admix)
+Tn.target_sims <- unique(c("0.02_0.07", "0.03_0.04", "0.03_0.05", "0.04_0.03", "0.04_0.04", "0.04_0.05", "0.05_0"))
+
+Sr.target_sims <- unique(c("0.02_0", "0_0.01", "0.03_0", "0.01_0.01", "0.01_0"))
+Sr.target_sims <- unique(c("0_0.01"))
+Sr.target_sims <- unique(filter(Sr.ALL.prop_blw_thrhld, prop_blw_thrhld < 0.03 & prop_blw_thrhld > 0.01)$admix)
+
+########
+
+target_sims <- SP.target_sims
+
+dt.prop_blw_thrhld <- SP.ALL.prop_blw_thrhld
+
+LG <- ggplot() + theme_bw() +
+  geom_line(data=Real.windows, aes(x=Winsize, y=prop_blw_thrhld,color='Vernot.Sci2016windows.cutoff316.prop_blw_thrhld'), color='black', linetype='dashed', size=2) +
+  geom_ribbon(data=Real.windows.95CI, aes(x=Winsize, ymin=lwr, ymax=upr), fill='darkgrey', alpha=0.5) +
+  #geom_line(data = dt.prop_blw_thrhld, aes(x=Winsize, y=prop_blw_thrhld, color=as.factor(admix)), size=1) +
+  #geom_line(data = filter(dt.prop_blw_thrhld, prop_blw_thrhld<0.03 & prop_blw_thrhld>0.01, Winsize==7), aes(x=Winsize, y=prop_blw_thrhld, color=as.factor(admix)), size=1)  +
+  geom_line(data = filter(dt.prop_blw_thrhld, admix %in% target_sims), aes(x=Winsize, y=prop_blw_thrhld, color=as.factor(admix)),size=1) +
+  coord_cartesian(xlim = c(5,10), ylim=c(0,0.1)) + 
+  #scale_x_discrete(breaks = c('5','6','7','8','9','10')) +
+  scale_y_continuous( expand = c(0,0)) + 
+  scale_x_continuous( expand = c(0,0), limits=c(5,10)) +
+  guides(color=guide_legend(title='Model')) +
+  ylab(label = 'Proportion Archaic depleted windows') +
+  xlab(label = 'Window size (Mb)') +
+  theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank()) +
+  #theme(legend.position="none") +
+  theme()
+
+```
+
+
+```{r F4 tables}
+#########
+Tenn.F4alpha.mean = Tenn.F4alpha %>%
+  group_by(admix,X) %>%
+  summarise(mean_alpha=round(mean((alpha)), 4)) %>%
+  setnames(c('admix','pop','mean_F4_alpha')) %>%
+  as.data.table()
+
+Tenn.F4alpha.mean.collapse <- Tenn.F4alpha.mean %>%
+  group_by(admix) %>%
+  summarise(mean_F4_EUR_ASN=paste(mean_F4_alpha, collapse=" ; ") ) %>%
+  as.data.table()
+
+#########
+Sriram.F4alpha.mean = Sriram.F4alpha %>%
+  group_by(admix,X) %>%
+  summarise(mean_alpha=round(mean((alpha)), 4)) %>%
+  setnames(c('admix','pop','mean_F4_alpha')) %>%
+  as.data.table()
+
+Sriram.F4alpha.mean.collapse <- Sriram.F4alpha.mean %>%
+  group_by(admix) %>%
+  summarise(mean_F4_EUR_ASN=paste(mean_F4_alpha, collapse=" ; ") ) %>%
+  as.data.table()
+
+#########
+SplitPop.F4alpha.mean = SplitPop.F4alpha %>%
+  group_by(admix,X) %>%
+  summarise(mean_alpha=round(mean((alpha)), 4)) %>%
+  setnames(c('admix','pop','mean_F4_alpha')) %>%
+  as.data.table()
+
+SplitPop.F4alpha.mean.collapse <- SplitPop.F4alpha.mean %>%
+  group_by(admix) %>%
+  summarise(mean_F4_EUR_ASN=paste(mean_F4_alpha, collapse=" ; ") ) %>%
+  as.data.table()   
+
+```
+
+
+```{r make admixture table}
+
+######################
+
+Tn.ALL.admix = filter(Tn.ALL.prop_blw_thrhld, admix %in% Tn.target_sims)
+
+#Tn.admix = data.table( admix = unique(c("0_0.05", "0.01_0.05", "0.04_0.02", "0_0.1", "0.04_0.02", "0.03_0.04", "0.03_0.05")),
+#                       pct_Arch_recov = c(0.0245752, 0.0320229, 0.0406485, 0.0511314, 0.0432555, 0.0466156) )
+#Tn.admix = data.table( admix = Tn.target.sims,
+#                       pct_Arch_recov = c(0.058015))
+
+Tn.admix = data.table( admix = Tn.target_sims,
+                       pct_Arch_recov = rep(x = NA, times = length(Tn.target_sims)))
+
+Tn.admix = Tn.ALL.admix %>% 
+  left_join(Tn.admix) %>% 
+  left_join(Tenn.F4alpha.mean.collapse) %>%
+  select(Mdl, n1, n2, admix, pct_Arch_recov, mean_F4_EUR_ASN) %>% 
+  unique() %>% 
+  as.data.table() %>% 
+  arrange(pct_Arch_recov)
+
+######################
+Sr.ALL.admix = filter(Sr.ALL.prop_blw_thrhld, admix %in% Sr.target_sims)
+
+#Sr.admix = data.table( admix = unique(c("0.02_0", "0_0.01", "0.03_0", "0.01_0.01", "0.01_0")),
+ #                      pct_Arch_recov = c(0.0181434, 0.00416512, 0.0284194, 0.0130425, 0.00913435) )
+#Sr.admix = data.table( admix = Sr.target_sims,
+ #                      pct_Arch_recov = c(0.00573681))
+
+Sr.admix = data.table( admix = Sr.target_sims,
+                       pct_Arch_recov = rep(x = NA, times = length(Sr.target_sims)))
+
+Sr.admix = Sr.ALL.admix %>% 
+  left_join(Sr.admix) %>%
+  left_join(Sriram.F4alpha.mean.collapse) %>%
+  select(Mdl, n1, n2, admix, pct_Arch_recov, mean_F4_EUR_ASN) %>% 
+  unique() %>% 
+  as.data.table() %>% 
+  arrange(pct_Arch_recov)
+
+#####################
+SP.ALL.admix = filter(SP.ALL.prop_blw_thrhld, admix %in% SP.target_sims)
+
+#SP.admix = data.table( admix = unique(c("0.01_0.07", "0.2_0.05", "0.07_0.1", "0.05_0.1","0.04_0.1", "0.03_0.1")),
+ #                     pct_Arch_recov = c(0.0363283, 0.0418137, 0.0571895, 0.0551143, 0.0541599, 0.0535046) )
+#SP.admix = data.table( admix = unique(c("0.1_0.1", "0.05_0.1", "0.04_0.1")),
+ #                    pct_Arch_recov = c(0.0677584, 0.0644696, 0.0636233) )
+
+SP.admix = data.table( admix = SP.target_sims,
+                       pct_Arch_recov = rep(x = NA, times = length(SP.target_sims)))
+
+SP.admix = SP.ALL.admix %>% 
+  left_join(SP.admix) %>%
+  left_join(SplitPop.F4alpha.mean.collapse) %>%
+  select(Mdl, n1, n2, admix, pct_Arch_recov, mean_F4_EUR_ASN) %>% 
+  unique() %>% 
+  as.data.table() %>% 
+  arrange(pct_Arch_recov)
+```
+
+
+
+```{r MultiPlot }
+
+multiplot(plotlist = list(KLD, KS, SE, LG), cols = 2)
+
+multiplot(plotlist = list(KLD, KS, SE), cols = 2)
+
+multiplot(plotlist = list(KS, SE, LG), cols = 2)
+
+###
+dt.admix <- SP.admix
+
+empty = ggplot() + theme_void()
+tb = tableGrob(d = dt.admix, rows = NULL, cols = names(dt.admix), 
+               theme=ttheme_default(base_size = 11)
+               )
+tb$widths <- unit(rep(1/(ncol(tb)+0.5), ncol(tb)), "npc")
+
+mdl <- "SplitPop"
+fname = paste0('~/Documents/Dropbox/Temp/DesertSimulations/2018_01_08//Multiplot_F4Tbl_', mdl,'.pdf')
+pdf(file = fname, width = 20, height = 10)
+grid.arrange( SE, empty, LG, tb,
+              ncol=2, nrow=2)
+dev.off()
+
+#grid.arrange( KS, LG, SE, tb,
+#             nrow = 2)
+
+grid.arrange(tb)
+```
+
+
+
+

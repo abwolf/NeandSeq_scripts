@@ -1,0 +1,561 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "1/29/2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r echo=FALSE, message=FALSE}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(futile.logger)
+library(VennDiagram)
+```
+
+
+```{r echo=FALSE}
+
+
+Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt', header=TRUE)
+
+
+nonAfr_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+Afr_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+overlap_bases_totMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_totMB),
+  area2 = as.integer(nonAfr_totMB),
+  cross.area = as.integer(overlap_bases_totMB),
+  category = c('Afr_totMB','nonAfr_totMb'),
+  fill = c('red','dodgerblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.3,-1.5), c(0.7,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'raw',
+  alpha=c(0.6, 0.9)
+)
+
+```
+
+
+
+```{r}
+
+nonAfr_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+San_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+overlap_bases_totMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(San_totMB),
+  area2 = as.integer(nonAfr_totMB),
+  cross.area = as.integer(overlap_bases_totMB),
+  category = c('San_totMB','nonAfr_totMb'),
+  fill = c('red','dodgerblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.3,-1.5), c(0.7,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'raw',
+  alpha=c(0.6, 0.9)
+)
+
+
+```
+
+
+
+
+
+```{r}
+
+EUR_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+Afr_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+overlap_bases_totMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+```
+
+
+```{r}
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_totMB),
+  area2 = as.integer(EUR_totMB),
+  cross.area = as.integer(overlap_bases_totMB),
+  category = c('Afr_totMB','Eur_totMb'),
+  fill = c('red','lightskyblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(2.2,-1.5), c(0.7,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'raw',
+  alpha = c(0.6, 1)
+)
+
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_totMB),
+  area2 = as.integer(EUR_totMB),
+  cross.area = as.integer(overlap_bases_totMB),
+  category = c('Afr_totMB','Eur_totMb'),
+  fill = c('tomato3','dodgerblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.3,-1.5), c(0.7,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'percent'
+)
+
+```
+
+
+
+
+```{r echo=FALSE}
+
+nonAfr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+Afr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+```
+
+
+```{r}
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_mergedMB),
+  area2 = as.integer(nonAfr_mergedMB),
+  cross.area = as.integer(overlap_bases_mergedMB),
+  #category = c('Afr_mergedMB','nonAfr_mergedMb'),
+  category = c('African','non-African'),
+  fill=c('red2','dodgerblue'),
+  ext.text = FALSE,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(2.5,-1), c(0.7,-1)),
+  fontface = 'bold',
+  cex=2, cat.cex=2,
+  print.mode = "raw",
+  alpha=c(0.7,0.9)
+)
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_mergedMB),
+  area2 = as.integer(nonAfr_mergedMB),
+  cross.area = as.integer(overlap_bases_mergedMB),
+  category = c('Afr_mergedMB','nonAfr_mergedMb'),
+  fill=c('red4','cyan4'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.55,-1.5), c(0.6,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = "percent"
+)
+```
+
+
+```{r echo=FALSE}
+
+EurEas_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+Afr_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                        col.names = c('chr','start','end','ID','pop','anc')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+overlap_bases_totMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+```
+
+
+```{r}
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_totMB),
+  area2 = as.integer(EurEas_totMB),
+  cross.area = as.integer(overlap_bases_totMB),
+  category = c('Afr_totMB','EurEas_totMB'),
+  fill=c('red4','cyan4'),
+  
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.7,-1.5), c(0.7,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = "raw"
+)
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_totMB),
+  area2 = as.integer(EurEas_totMB),
+  cross.area = as.integer(overlap_bases_totMB),
+  category = c('Afr_totMB','EurEas_totMB'),
+  fill=c('red4','cyan4'),
+  
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.7,-1.5), c(0.7,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = "percent"
+)
+```
+
+
+
+```{r echo=FALSE}
+
+EurEas_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+Afr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+```
+
+
+
+```{r}
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_mergedMB),
+  area2 = as.integer(EurEas_mergedMB),
+  cross.area = as.integer(overlap_bases_mergedMB),
+  category = c('Afr_mergedMB','EurEas_mergedMB'),
+  fill=c('red4','cyan4'),
+  scaled=TRUE,
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.55,-1.5), c(0.6,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = "raw"
+)
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(Afr_mergedMB),
+  area2 = as.integer(EurEas_mergedMB),
+  cross.area = as.integer(overlap_bases_mergedMB),
+  category = c('Afr_mergedMB','EurEas_mergedMB'),
+  fill=c('red4','cyan4'),
+  scaled=TRUE,
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(1.55,-1.5), c(0.6,-1.5)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = "percent"
+)
+```
+
+
+```{r echo=FALSE}
+
+Eur_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+Eas_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+Afr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+EurAfr_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+EasAfr_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+EurEas_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+# EurEas_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged',
+#                                 col.names = c('chr','start','end','overlap_bp'),
+#                                 colClasses = c('integer','numeric','numeric','numeric')) %>%
+#                           summarise( sum(overlap_bp)/1000000) %>%
+#                           as.numeric()
+
+
+EurEasAfr_overlap_bases_mergedMB <- fread('bedops --intersect ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged | sort-bed - | bedmap --ec --delim "\t" --echo --bases - ',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+
+grid.newpage()
+draw.triple.venn(
+  area1 = as.integer(Afr_mergedMB),
+  area2 = as.integer(Eur_mergedMB),
+  area3 = as.integer(Eas_mergedMB),
+  n12 = as.integer(EurAfr_overlap_bases_mergedMB),
+  n13 = as.integer(EasAfr_overlap_bases_mergedMB),
+  n23 = as.integer(EurEas_overlap_bases_mergedMB),
+  n123 = as.integer(EurEasAfr_overlap_bases_mergedMB),
+#  category = c('Afr_mergedMB','Eur_mergedMB','Eas_mergedMB'),
+  category = c('AFR','EUR','EAS'),
+  scaled=TRUE,
+#  fill=c('#f768a1','#d8b365','#5ab4ac'),
+  cat.fontface = 'bold', fontface='bold',
+  cat.cex=4, cex=4,
+  alpha=c(1,0.7,0.8)
+)
+```
+
+
+```{r}
+
+Afr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+nonAfr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+San_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+nonAfrAfr_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+SanAfr_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+nonAfrSan_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+AfrSan_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+
+nonAfrSanAfr_overlap_bases_mergedMB <- fread('bedops --intersect ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed.merged | sort-bed - | bedmap --ec --delim "\t" --echo --bases - ',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+
+grid.newpage()
+draw.triple.venn(
+  area1 = as.integer(Afr_mergedMB),
+  area2 = as.integer(nonAfr_mergedMB),
+  area3 = as.integer(San_mergedMB),
+  n12 = as.integer(nonAfrAfr_overlap_bases_mergedMB),
+  n13 = as.integer(AfrSan_overlap_bases_mergedMB),
+  n23 = as.integer(nonAfrSan_overlap_bases_mergedMB),
+  n123 = as.integer(nonAfrSanAfr_overlap_bases_mergedMB),
+  category = c('Afr_mergedMB','nonAfr_mergedMB','San_mergedMB'),
+  scaled=TRUE,
+  fill=c('red1','dodgerblue2','mediumorchid4'),
+  cat.fontface = 'bold', fontface='bold',
+  cat.cex=1.5, cex=1.5,
+  alpha=c(0.7,0.7,0.8)
+)
+
+```
+
+
+```{r}
+
+Yri_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+nonAfr_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+San_mergedMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged',
+                        col.names = c('chr','start','end')) %>%
+                  summarise( sum( (end-start)/1000000) ) %>%
+                  as.numeric()
+
+
+nonAfrYri_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+SanYri_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+nonAfrSan_overlap_bases_mergedMB <- fread('bedmap --ec --delim "\t" --echo --bases ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+
+nonAfrSanYri_overlap_bases_mergedMB <- fread('bedops --intersect ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/SANcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged | sort-bed - | bedmap --ec --delim "\t" --echo --bases - ',
+                                col.names = c('chr','start','end','overlap_bp'),
+                                colClasses = c('integer','numeric','numeric','numeric')) %>%
+                          summarise( sum(overlap_bp)/1000000) %>%
+                          as.numeric()
+
+
+grid.newpage()
+draw.triple.venn(
+  area1 = as.integer(Yri_mergedMB),
+  area2 = as.integer(nonAfr_mergedMB),
+  area3 = as.integer(San_mergedMB),
+  n12 = as.integer(nonAfrYri_overlap_bases_mergedMB),
+  n13 = as.integer(SanYri_overlap_bases_mergedMB),
+  n23 = as.integer(nonAfrSan_overlap_bases_mergedMB),
+  n123 = as.integer(nonAfrSanYri_overlap_bases_mergedMB),
+  category = c('Yri_mergedMB','nonAfr_mergedMB','San_mergedMB'),
+  scaled=TRUE,
+  fill=c('red1','dodgerblue2','mediumorchid4'),
+  cat.fontface = 'bold', fontface='bold',
+  cat.cex=1.5, cex=1.5,
+  alpha=c(0.7,0.7,0.8)
+)
+
+```

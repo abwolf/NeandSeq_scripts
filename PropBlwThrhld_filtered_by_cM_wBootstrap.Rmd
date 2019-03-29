@@ -161,14 +161,14 @@ Prop_blw_thrhld.fn <- function(callset, sample_size, min_window, pct_int_thrhld)
 
 
 ```{r pct_int_thrhld}
-
+# Calculate and return the 99th percentile for the pct_int level for 8Mb windows
 pct_int_thrhld.fn(callset = 'callset_EUREAS', min_window = 1, sample_size = 2014)
 
 ```
 
 
 ```{r Prop_blw_thrhld}
-
+# Calculate the proportion of queryable windows w/ cM~1 that are bewlo the pct_int_thrhld
 RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'callset_EUREAS',sample_size = 2014, min_window = 1, pct_int_thrhld = 0.00031623)
 
 ```
@@ -198,69 +198,69 @@ ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop
 ######################
 ######################
 ######################
-```{r}
-# EUR_EAS windowed genomes, introgressed bp
-
-dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
-callset <- 'callset_EUREAS'
-maxwin <- 15
- dt <- data.table(NULL)
- for(i in seq(1,as.numeric(maxwin),by = 1)){
-    print(paste0('Loading window size: ',i))
-    infile <- paste0(dir,'/',callset,'/','windows.',i,'MB.100kb.bed.introgressed_bases.cM')
-    dat <- fread(infile, 
-                 na.strings=c("NA", "None",'.'), 
-                col.names = c('chrom','winstart','winend','queryable_bp', 'introgressed_bp','cMstart','cMend','cM_Mb','pct_int','WinSize'))
-    dt <- rbind(dt, dat)
- }
-windows.introgressed_bases.cM.dt <- dt
-
-windows.introgressed_bases.cM.dt <- filter(windows.introgressed_bases.cM.dt, chrom!='chrM', chrom!= 'chrX', chrom!='chrY')
-```
-
-```{r}
-#Calculate pct_int threshold for data based on 1cM/Mb filter
-pct_int_thrhld <- 
-  windows.introgressed_bases.cM.dt %>%
-  filter(cM_Mb <= 1.1 & cM_Mb >= 0.9) %>%
-  filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
-  group_by(WinSize) %>%
-  summarise(percentile_99 = (quantile(pct_int, probs=0.01, na.rm=TRUE))) %>%
-  filter( WinSize=8) %>% select(percentile_99) %>% as.numeric()
-
-# 99th percentil for 8Mb Window is pct_int < 0.000122
-
-```
-
-```{r}
-
-count.queryable_windows.cM_Mb.dt <-
-windows.introgressed_bases.cM.dt %>%
-  mutate(count = 1) %>%
-  filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
-  filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
-  group_by(WinSize) %>%
-  summarize(n_queryable_cM = sum(count)) %>%
-  as.data.table()
-  
-count.queryable_windows.cM_Mb.blw_thrhld.dt <-
-windows.introgressed_bases.cM.dt %>%
-  mutate(count = 1) %>%
-  filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
-  filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
-  filter( pct_int <= pct_int_thrhld) %>%
-  group_by(WinSize) %>%
-  summarize(n_queryable_cM_blw_thrhld = sum(count)) %>%
-  as.data.table()
-
-prop_blw_thrhld.dt <- 
-  left_join(count.queryable_windows.cM_Mb.dt, count.queryable_windows.cM_Mb.blw_thrhld.dt, by='WinSize') %>% 
-  replace_na(list(n_queryable_cM_blw_thrhld = 0)) %>% 
-  as.data.table() %>% 
-  mutate(prop_blw_thrhld = n_queryable_cM_blw_thrhld/n_queryable_cM)
-
-prop_blw_thrhld.dt
-```
+# ```{r}
+# # EUR_EAS windowed genomes, introgressed bp
+# 
+# dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+# callset <- 'callset_EUREAS'
+# maxwin <- 15
+#  dt <- data.table(NULL)
+#  for(i in seq(1,as.numeric(maxwin),by = 1)){
+#     print(paste0('Loading window size: ',i))
+#     infile <- paste0(dir,'/',callset,'/','windows.',i,'MB.100kb.bed.introgressed_bases.cM')
+#     dat <- fread(infile, 
+#                  na.strings=c("NA", "None",'.'), 
+#                 col.names = c('chrom','winstart','winend','queryable_bp', 'introgressed_bp','cMstart','cMend','cM_Mb','pct_int','WinSize'))
+#     dt <- rbind(dt, dat)
+#  }
+# windows.introgressed_bases.cM.dt <- dt
+# 
+# windows.introgressed_bases.cM.dt <- filter(windows.introgressed_bases.cM.dt, chrom!='chrM', chrom!= 'chrX', chrom!='chrY')
+# ```
+# 
+# ```{r}
+# #Calculate pct_int threshold for data based on 1cM/Mb filter
+# pct_int_thrhld <- 
+#   windows.introgressed_bases.cM.dt %>%
+#   filter(cM_Mb <= 1.1 & cM_Mb >= 0.9) %>%
+#   filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+#   group_by(WinSize) %>%
+#   summarise(percentile_99 = (quantile(pct_int, probs=0.01, na.rm=TRUE))) %>%
+#   filter( WinSize=8) %>% select(percentile_99) %>% as.numeric()
+# 
+# # 99th percentil for 8Mb Window is pct_int < 0.000122
+# 
+# ```
+# 
+# ```{r}
+# 
+# count.queryable_windows.cM_Mb.dt <-
+# windows.introgressed_bases.cM.dt %>%
+#   mutate(count = 1) %>%
+#   filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+#   filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+#   group_by(WinSize) %>%
+#   summarize(n_queryable_cM = sum(count)) %>%
+#   as.data.table()
+#   
+# count.queryable_windows.cM_Mb.blw_thrhld.dt <-
+# windows.introgressed_bases.cM.dt %>%
+#   mutate(count = 1) %>%
+#   filter(cM_Mb < 1.1 & cM_Mb > 0.9) %>%
+#   filter( (queryable_bp/(winend-winstart)) >= 0.9) %>%
+#   filter( pct_int <= pct_int_thrhld) %>%
+#   group_by(WinSize) %>%
+#   summarize(n_queryable_cM_blw_thrhld = sum(count)) %>%
+#   as.data.table()
+# 
+# prop_blw_thrhld.dt <- 
+#   left_join(count.queryable_windows.cM_Mb.dt, count.queryable_windows.cM_Mb.blw_thrhld.dt, by='WinSize') %>% 
+#   replace_na(list(n_queryable_cM_blw_thrhld = 0)) %>% 
+#   as.data.table() %>% 
+#   mutate(prop_blw_thrhld = n_queryable_cM_blw_thrhld/n_queryable_cM)
+# 
+# prop_blw_thrhld.dt
+# ```
 
 
 

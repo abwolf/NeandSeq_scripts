@@ -1,0 +1,117 @@
+---
+title: "95pctCI_RealWindows"
+author: "Aaron Wolf"
+date: "2/23/2018"
+output: html_document
+---
+
+```{r packages}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+
+require(bit64)      # view integer values for intrg_bases
+```
+
+```{r functions}
+
+bootstrap.fn <- function(callset, sample_size, min_window){
+  dt.bootstrap.prop_blw_thrhld <- data.table()
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+    dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases')
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chr','strt','end','quer','intr_bp'))
+    
+    
+    bs.windows.introgressed_bases <- sample_n(tbl = windows.introgressed_bases, size = nrow(windows.introgressed_bases), replace = TRUE)
+    #bs.windows.introgressed_bases <- sample_n(tbl = windows.introgressed_bases, size = 50, replace = TRUE)
+    
+    bs.windows.introgressed_bases <- bs.windows.introgressed_bases %>% filter(quer/(end-strt)>0.9)
+    
+    n_quer <- nrow(bs.windows.introgressed_bases)
+    n_blw_thrhld <- bs.windows.introgressed_bases %>%
+                    mutate(pct_int=(intr_bp)/(quer)/(sample_size)) %>%
+                    filter(pct_int<0.000316) %>%
+                    nrow()
+    prop_blw_thrhld <- n_blw_thrhld/n_quer
+    
+    dt.bootstrap.prop_blw_thrhld <- rbind(dt.bootstrap.prop_blw_thrhld, data.table(winsize,n_quer,n_blw_thrhld,prop_blw_thrhld))
+  }
+  return(dt.bootstrap.prop_blw_thrhld)
+}
+
+
+CI.95.fn <- function(reps, callset, sample_size, min_window){
+  dt.CI.95 <- data.table()
+  count <- 1
+  while(count<=reps){
+  #dt.bs <- bootstrap.fn(callset = 'callset_ALL.neand_ambig', sample_size = 2992+56)
+  dt.bs <- bootstrap.fn(callset = callset, sample_size = sample_size, min_window = min_window)
+  dt.CI.95 <- rbind(dt.CI.95, dt.bs)
+  count <- count+1
+  }
+  return(dt.CI.95)
+}
+
+
+Prop_blw_thrhld.fn <- function(callset, sample_size, min_window){
+  dt.prop_blw_thrhld <- data.table()
+#  for(winsize in seq(from=1, to = 15, by = 1)){
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+      dir <- '~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/Windows.1_to_15Mb.PNGproj/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases')
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chr','strt','end','quer','intr_bp'))
+    windows.introgressed_bases <- windows.introgressed_bases %>% filter(quer/(end-strt)>=0.9)
+    
+    n_quer <- nrow(windows.introgressed_bases)
+    n_blw_thrhld <- windows.introgressed_bases %>%
+                    mutate(pct_int=(intr_bp)/(quer)/(sample_size)) %>%
+                    filter(pct_int<=0.000316) %>%
+                    nrow()
+    prop_blw_thrhld <- n_blw_thrhld/n_quer
+    
+    dt.prop_blw_thrhld <- rbind(dt.prop_blw_thrhld, data.table(winsize,n_quer,n_blw_thrhld,prop_blw_thrhld))
+  }
+  return(dt.prop_blw_thrhld)
+}
+
+
+
+```
+
+
+```{r Prop_blw_thrhld}
+
+Prop_blw_thrhld.fn(callset = 'callset_EUREAS',sample_size = 2014, min_window = 1)
+
+```
+
+
+```{r Bootstrap and 95CI}
+Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 100, callset = 'callset_EUREAS', sample_size = 2014, min_window = 7)
+
+CI <- data.table()
+for(i in seq(from=7, to=15, by=1)){
+  #ci <- t.test(filter(Bootstrapped.prop_blw_thrhld, winsize==i)$prop_blw_thrhld)$conf.int[1:2]
+  ci <- Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld %>% quantile(probs=c(0.025, 0.975), na.rm=TRUE)
+  CI <- rbind(CI, data.table(winsize=i, lower=ci[1], upper=ci[2]))
+}
+
+```
+

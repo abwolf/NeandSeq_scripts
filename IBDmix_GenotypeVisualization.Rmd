@@ -1,0 +1,82 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "3/29/2019"
+output: html_document
+---
+
+```{r}
+
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(RColorBrewer)
+
+```
+
+
+
+```{r Derived Allele Converion}
+
+chr_num <- 18
+seg_num <- 9
+AAfile <- read.table(file=paste("seg", seg_num, ".chr", chr_num, ".AA.txt", sep=""), header=F, sep="\t",stringsAsFactors = F,col.names = c("chr","pos","ref","alt","AncestralAllele"))
+
+A.Allele <- as.character(sapply(1:nrow(AAfile), function(x){
+  A.Allele <-unlist(strsplit(AAfile$AncestralAllele[x],""))[1] 
+  return(A.Allele)
+}))
+AAfile <- cbind(AAfile, A.Allele)
+genoprev <- read.table(file=paste("seg", seg_num, ".chr", chr_num, ".genoprev", sep=""), header=F, sep="\t", stringsAsFactors = F, col.names=c("chr", "pos", "ref","alt","altai","ind"))
+toreplace <- which(genoprev$pos %in% AAfile$pos)
+
+recoded.geno <- as.data.frame(t(sapply(toreplace, function(x){
+  oldline <- unlist(genoprev[x,])
+  newline <- oldline
+  A.Allele <- AAfile[AAfile$pos==oldline["pos"],"A.Allele"]
+  #AncestralAllele <- unlist(strsplit(as.character(Ancinfo.30peak[Ancinfo.30peak$pos==oldline[["pos"]],"AncestralAllele"]),""))[1]
+  if(A.Allele==oldline["ref"]) {
+    return(newline)
+  } else if(A.Allele==oldline["alt"]) {
+    if(length(which(oldline==0))!=0) {
+      newline[which(oldline==0)] <- 2
+    } 
+    if(length(which(oldline==2))!=0) {
+      newline[which(oldline==2)] <- 0
+    }
+    return(newline)
+  }
+  else {
+    outlier<-rep(NA,6)
+    names(outlier)<-c("chr","pos","ref","alt","altai","ind")
+    return(outlier)
+  }
+})))
+
+recoded.geno <- na.omit(recoded.geno)
+recoded.geno$altai <- as.numeric(levels(recoded.geno$altai))[recoded.geno$altai]
+recoded.geno$ind <- as.numeric(levels(recoded.geno$ind))[recoded.geno$ind]
+recoded.geno$pos <- as.numeric(levels(recoded.geno$pos))[recoded.geno$pos]
+recoded.geno$chr <- as.numeric(levels(recoded.geno$chr))[recoded.geno$chr]
+#recoded.geno$ref <- as.numeric(levels(recoded.geno$ref))[recoded.geno$ref]
+#recoded.geno$alt <- as.numeric(levels(recoded.geno$alt))[recoded.geno$alt]
+
+```
+
+
+
+```{r Genotype Visualization}
+
+colorvec <- c("white", "green4", "blue2")
+plot(NA, xlim=c(45735596,45819148), ylim=c(0,3), xlab="", ylab="")
+title("prop5_count20_chr18_20_40")
+invisible(sapply(1:nrow(recoded.geno), function(x) { points(rep(recoded.geno[x,2],2),1:2, col=colorvec[unlist(recoded.geno[x,5:6])+1], pch=15, cex=2) }))
+
+
+
+```
+
+
+
+

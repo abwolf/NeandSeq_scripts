@@ -1,0 +1,195 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "11/6/2018"
+output: html_document
+---
+
+```{r}
+
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(bit64)
+
+```
+
+```{r}
+IBDmixCalls <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt', header=TRUE)
+
+IBDmixCalls <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt          ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.SAN.originalmerge.LOD4.30K.txt', header=TRUE)
+
+#callable_bases.IBDmix <- fread('~/DATALab/NeanderthalSeq/IBDmix/include_regions/chrALL.include', header=TRUE) %>%
+#                          mutate(length=as.numeric(chromEnd-chromStart))
+
+setwd('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/')
+IBDmixcalls.masked <- fread(' bedmap --ec --delim "\t" --echo --indicator ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged ', col.names = c('chr','start','end','ID','pop','anc','indicator')) %>%
+                              filter(indicator==0)
+
+##########################
+##########################
+
+SstarCalls <- fread('~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/LL.callsetALL.mr_0.99.ALL_calls_by_hap.bed.merged.by_chr.bed.sorted.filtered', 
+                    col.names = c('chr','strt','end','chr.ID.hap','ID','pop','archaic'))
+
+queryable_windows <- fread('~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/SimulatedDemographic/RealData.nobackup/PNGproj_2015/queryable_windows_AllPops.bed.merged',
+                    col.names = c('chr','winstrt','winend'))
+
+tot_queryable_bp.Sci2016 <- sum(as.numeric(queryable_windows$winend) - as.numeric(queryable_windows$winstrt))
+
+
+```
+
+
+```{r}
+
+dt.Sstar <- 
+  SstarCalls %>%
+  filter(archaic=='neand') %>%
+  group_by(ID, pop) %>%
+  summarise(sum_MB=sum(end-strt)/1000000) %>%
+  as.data.table()
+
+dt.Sstar$anc <- factor(dt.Sstar$pop, levels = c('EAS','EUR','SAS','PNG'))
+
+
+dt.IBDmix <-
+  #IBDmixcalls.masked %>%
+  IBDmixCalls %>%
+  #filter(anc %in% c('EUR','EAS', 'AFR')) %>%
+  group_by(ID,pop,anc) %>%
+  summarise(sum_MB=sum(end-start)/1000000) %>%
+  as.data.table()
+  
+dt.IBDmix$anc <- factor(dt.IBDmix$anc, levels = c('EAS','EUR','SAS','AFR','AMR','AFR_AMR'))
+dt.IBDmix$pop <- factor(dt.IBDmix$pop, levels = unique(arrange(dt.IBDmix, desc(anc))$pop))
+v <- dt.IBDmix %>% group_by(anc,pop) %>% summarise(pop_mean=mean(sum_MB)) %>% as.data.table() %>% arrange((pop_mean))
+
+```
+
+```{r}
+color.values <- c('EUR' = 'dodgerblue1','EAS'='mediumpurple3','AFR'='red3')
+color.values <- c('EUR'='#d8b365', 'EAS'='#5ab4ac','AFR'='#f768a1')
+color.values <- c( 'EAS'= 'dodgerblue3','EUR'= 'dodgerblue3','SAS'= 'dodgerblue3','AMR'= 'dodgerblue3','AFR'='red3','AFR_AMR'='mediumpurple3')
+afr.color.values <- c('LWK'='#a50f15','GWD'='#cb181d','MSL'='#ef3b2c','YRI'='#fb6a4a','ESN'='#fcbba1')
+
+#queryable_MB <- sum(callable_bases.IBDmix$length)/1000000
+
+#queryable_MB <- (3088286401 - 156040895 - 57227415 - 16569)/1000000
+
+queryable_MB <- 1
+
+ggplot() + theme_classic() +
+  geom_violin(data=dt.IBDmix[anc %in% c('EUR','EAS', 'AFR')], aes(x=as.factor(anc), y=sum_MB, fill=as.factor(anc)), draw_quantiles = c(0.5), scale = 'width') +
+  scale_fill_manual(values=color.values) +
+#  scale_x_discrete(breaks=c('EAS','EUR'), limits=c('EAS','EUR')) +
+  scale_x_discrete(breaks=c('EAS','EUR','AFR'), limits=c('EAS','EUR','AFR')) +
+#  scale_x_discrete(breaks=c('EAS','EUR','SAS','AFR','AMR','AFR_AMR'), limits=c('SAS','EAS','EUR','AMR','AFR_AMR','AFR'), labels=c('EAS','EUR','SAS','AFR','AMR','ACB/ASW')) +
+#  geom_violin(data=dt.IBDmix[anc %in% c('EAS','EUR','AFR')], aes(x=as.factor(anc), y=sum_MB, fill=as.factor(anc)), draw_quantiles = c(0.5), scale = 'width') +
+#  scale_x_discrete(breaks=c('EAS','EUR','AFR'), limits=c('AFR','EAS','EUR')) +
+#  geom_violin(data=dt.IBDmix[anc %in% c('EUR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('EUR')]$pop), limits=unique(arrange(dt.IBDmix[anc %in% c('EUR')], desc(sum_MB))$pop)) +
+#  geom_violin(data=dt.IBDmix[anc %in% c('EAS')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('EAS')]$pop), limits=unique(arrange(dt.IBDmix[anc %in% c('EAS')], desc(sum_MB))$pop)) +
+  #geom_violin(data=dt.IBDmix[anc %in% c('AFR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+  #scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('AFR')]$pop), limits=unique(arrange(v, desc(pop_mean))[anc %in% c('AFR')]$pop)) +
+  #scale_fill_manual(values = afr.color.values) +
+#  geom_violin(data=dt.IBDmix, aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  geom_violin(data=dt.IBDmix, aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  scale_x_discrete(breaks=unique(dt.IBDmix$pop), limits=arrange(v,(pop_mean))$pop) +
+#  geom_violin(data=dt.IBDmix[anc %in% c('EUR','EAS','AFR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  scale_x_discrete(breaks=v[anc %in% c('EUR','EAS','AFR')]$pop, limits=(arrange(v,desc(pop_mean))[anc %in% c('EUR','EAS','AFR')]$pop)) +
+#  scale_x_discrete(breaks=v[anc %in% c('EUR','EAS','AFR')]$pop, limits=(arrange(v,pop_mean)[anc %in% c('EUR','EAS','AFR')]$pop)) +
+  ggtitle('IBDmix With Masking') +
+ # coord_cartesian(ylim=c(0.0,0.04)) +
+#  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0.0, to = 0.04,by = 0.005)) + 
+  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0, to = 100,by = 10)) +
+  coord_cartesian(ylim=c(0,100)) +
+  ylab('Sequence of Neanderthal Ancestry (Mb)') +
+  xlab('') +
+  theme(
+#    legend.position="none",
+    axis.line.x=element_line(color="black", size=2),
+    axis.line.y=element_line(color="black",size=2),
+    panel.grid.major = element_line(colour = "grey60"),
+    plot.title=element_text(face="bold", size = 24),
+    axis.text=element_text(face="bold", size = 20),
+    axis.title=element_text(face="bold", size = 20)
+  )
+  
+
+## Test for Significance in Difference Beween levels of neande ancestry Called ##
+
+dt.kw <- kruskal.test(sum_MB ~ anc, data=dt.IBDmix)
+dt.kw$p.value
+
+
+dt.kw <- kruskal.test(sum_MB ~ pop, data=dt.IBDmix[anc %in% c('EAS','EUR')])
+dt.kw$p.value
+
+
+pairwise.wilcox.test(x = dt.IBDmix$sum_MB, g = dt.IBDmix$anc,
+                 p.adjust.method = "BH")
+
+pairwise.wilcox.test(x = dt.IBDmix[anc %in% c('EAS','EUR')]$sum_MB, g = dt.IBDmix[anc %in% c('EAS','EUR')]$pop,
+                 p.adjust.method = "BH")
+
+
+t.test(x = dt.IBDmix[anc=='EUR']$sum_MB, y = dt.IBDmix[anc=='EAS']$sum_MB)
+
+t.test(x = dt.IBDmix[anc=='SAS']$sum_MB, y = dt.IBDmix[anc=='EAS']$sum_MB)
+
+t.test(x = dt.IBDmix[anc=='EUR']$sum_MB, y = dt.IBDmix[anc=='SAS']$sum_MB)
+
+## Test level of enrichment between EAS and EUR ##
+
+median(dt.IBDmix[anc=='EAS']$sum_MB)/median(dt.IBDmix[anc=='EUR']$sum_MB)
+
+median(dt.IBDmix[anc=='SAS']$sum_MB)/median(dt.IBDmix[anc=='EUR']$sum_MB)
+
+median(dt.IBDmix[anc=='EAS']$sum_MB)/median(dt.IBDmix[anc=='SAS']$sum_MB)
+
+###################
+###################
+
+ggplot() + theme_classic() +
+  geom_violin(data=dt.Sstar[pop %in% c('EAS','EUR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5)) +
+  scale_fill_manual(values = color.values) +
+  scale_x_discrete(breaks =c('EAS','EUR'), limits=c('EAS','EUR')) +
+#  scale_x_discrete(breaks =c('EAS','EUR','SAS','PNG'), limits=c('EAS','EUR','PNG','SAS')) +
+  ggtitle('S* 2016') +
+ # coord_cartesian(ylim=c(0.0,0.04)) +
+#  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0.0, to = 0.04,by = 0.005)) + 
+  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0, to = 100,by = 10)) +
+  coord_cartesian(ylim=c(0,100)) +
+  ylab('Sequence of Neanderthal Ancestry (Mb)') +
+  xlab('') +
+  theme(
+    axis.line.x=element_line(color="black", size=2),
+    axis.line.y=element_line(color="black",size=2),
+    panel.grid.major = element_line(colour = "grey60"),
+    plot.title=element_text(face="bold", size = 24),
+    axis.text=element_text(face="bold", size = 20),
+    axis.title=element_text(face="bold", size = 20)
+  )
+
+dt.kw <- kruskal.test(sum_MB ~ anc, data=dt.Sstar)
+dt.kw$p.value
+
+pairwise.wilcox.test(x = dt.Sstar$sum_MB, g = dt.Sstar$anc,
+                 p.adjust.method = "BH")
+
+t.test(x = dt.Sstar[anc=='EUR']$sum_MB, y = dt.Sstar[anc=='EAS']$sum_MB)
+
+t.test(x = dt.Sstar[anc=='SAS']$sum_MB, y = dt.Sstar[anc=='EAS']$sum_MB)
+
+t.test(x = dt.Sstar[anc=='EUR']$sum_MB, y = dt.Sstar[anc=='SAS']$sum_MB)
+
+
+median(dt.Sstar[anc=='EAS']$sum_MB)/median(dt.Sstar[anc=='EUR']$sum_MB)
+
+median(dt.Sstar[anc=='SAS']$sum_MB)/median(dt.Sstar[anc=='EUR']$sum_MB)
+
+median(dt.Sstar[anc=='EAS']$sum_MB)/median(dt.Sstar[anc=='SAS']$sum_MB)
+```
+

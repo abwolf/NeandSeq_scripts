@@ -1,0 +1,357 @@
+---
+title: "IBDmix Hi-Freq Neand Calls"
+author: "Aaron Wolf"
+date: "11/14/2018"
+output: html_document
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(stringr)
+library(grid)
+library(gridExtra)
+library(stringr)
+set.seed(1)
+```
+
+```{r load data}
+IBDmix.unmasked.callset = fread('~/OLDAKEYLab/akey_vol2/IntroSeg_WQFu/Empirical/SingleAltaiNeanderthal/Altai.1KGP3.LOD4.30K.txt', header=TRUE, drop = 1) %>%
+                          filter(anc!="AMR")
+colnames <- names(IBDmix.unmasked.callset)
+
+
+
+# IBDmix.masked.callset = rbind(fread('~/OLDAKEYLab/akey_vol2/IntroSeg_WQFu/Empirical/SingleAltaiNeanderthal/removalRefpop/removeYRIoverlap/SAS-YRI.bed'),
+#                               fread('~/OLDAKEYLab/akey_vol2/IntroSeg_WQFu/Empirical/SingleAltaiNeanderthal/removalRefpop/removeYRIoverlap/EAS.EUR-YRI.bed')) %>%
+#                         setcolorder(neworder = c(15,16,1:14)) %>%
+#                         select(2:16) %>%
+#                         setnames(colnames) %>%
+#                         rowwise() %>% mutate(chr=as.numeric(strsplit(chr, split = 'r')[[1]][[2]])) %>%
+#                         as.data.table()
+
+
+IBDmix.masked.callset = rbind(fread('~/OLDAKEYLab/akey_vol2/IntroSeg_WQFu/Empirical/SingleAltaiNeanderthal/removalRefpop/removeYRItotally/SAS-YRItotally.bed'),
+                              fread('~/OLDAKEYLab/akey_vol2/IntroSeg_WQFu/Empirical/SingleAltaiNeanderthal/removalRefpop/removeYRItotally/EAS.EUR-YRItotally.bed')) %>%
+                        setcolorder(neworder = c(15,16,1:14)) %>%
+                        select(2:16) %>%
+                        setnames(colnames) %>%
+                        rowwise() %>% mutate(chr=as.numeric(strsplit(chr, split = 'r')[[1]][[2]])) %>%
+                        as.data.table()
+
+
+Altai.2016.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2016.p_SingleArchaic/Altai2016pub.1KGP3.LOD4.30K.txt', header=TRUE)
+
+
+Sstar.2016.callset = fread('~/OLDAKEYLab/akey_vol2/bvernot/archaic_1kg_p3/data/call_set_2015.11.06/LL.callsetALL.mr_0.99.ALL_calls_by_hap.bed.merged.by_chr.bed.sorted',
+                           col.names = c('chr','start','end','c.ID.h','ID','anc','arch')) %>%
+                      filter(arch=='neand', anc %in% c('EAS', 'SAS', 'EUR'))
+
+
+
+Adaptive.2016.callset = fread('cat ~/DATALab/NeanderthalSeq/AdaptiveIntrogression/adaptive_introgressed_regions_*.txt | grep -v chromosome', header = FALSE,
+                              col.names = c('chr','start','end','freq1', 'freq2','freq3',
+                                            'freq4','freq5','freq6','freq7','tagSNPs_+_SNPsLD','haplo_len','haplo_chr',
+                                            'extended_LD_start','extended_LD_end','Nearest_Genes','GWAS_SNP','eQTL','FDR','arch'), na.strings = c("NA")) %>%
+                        filter(arch=='neand' | arch=="") %>%
+                        rowwise() %>% mutate(chr=as.numeric(strsplit(chr, split = 'r')[[1]][[2]])) %>%
+                        as.data.table()
+
+
+
+Neand.depletions = fread('~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/bin/Depletions.Neand.bed',
+                         col.names = c('chr','start','end'))
+Neand_Deni.depletions = fread('~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/bin/Depletions.Neand_Denis.bed',
+                              col.names = c('chr','start','end'))
+GenePosNames = fread('gzcat ~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/RefSeqGenes.nobackup/Depletions.chrALL_FULL_RefSeqGeneIDs.gz', header=TRUE) %>%
+                rowwise() %>% mutate(hg19.knownGene.chrom=as.numeric(strsplit(hg19.knownGene.chrom, split = 'r')[[1]][[2]]))  %>%
+                filter(hg19.knownGene.chrom %in% seq(1,22,by = 1)) %>%
+                mutate(chr=hg19.knownGene.chrom) %>%
+                as.data.table()
+genes_of_interest = c('FOXP2','AMY2B','ROBO1','ROBO2','LYPLA1')
+
+GenePosNames.uniq <- subset(GenePosNames,!duplicated(GenePosNames$hg19.kgXref.geneSymbol))
+```
+
+
+```{r}
+color.values <- c('EUR' = 'forestgreen','EAS'='indianred3','SAS'='cyan3', 'AFR'='mediumpurple4')
+ancestry.levels <- c('AFR','EUR','EAS','SAS')
+
+
+calls = rbind(IBDmix.unmasked.callset[,masked:='no'] %>% select(ID, chr, start, end, anc, masked), 
+              IBDmix.masked.callset[,masked:='yes'] %>% select(ID, chr, start, end, anc, masked),
+              Sstar.2016.callset[,masked:='sstar'] %>% select(ID, chr, start, end, anc, masked)) %>%
+        mutate(anc = factor(anc, levels = ancestry.levels)) %>%
+        arrange(anc, ID)
+calls[, ID.mod := .GRP, by = ID]
+
+
+# calls = rbind(IBDmix.unmasked.callset[,masked:='no'], 
+#               IBDmix.masked.callset[,masked:='yes']) %>%
+#         mutate(anc = factor(anc, levels = ancestry.levels)) %>%
+#         arrange(anc, ID)
+# calls[, ID.mod := .GRP, by = ID]
+```
+
+
+```{r chr18 region of hiFreq}
+plot.u.IBDmix <- ggplot() + theme_bw() +
+  geom_rect(data=filter(calls, chr==18),aes(xmin=2.0e07, xmax=2.15e7, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.01) +
+  geom_rect(data=filter(calls, chr==18),aes(xmin=2.9e07, xmax=3.05e7, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.01) +
+  geom_segment(data=filter(calls, chr==18, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==18, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, chr==18, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; no masking overlap w/ YRI') +
+  coord_cartesian(xlim=c(2e07, 4e07)) +
+  theme()
+
+
+plot.m.Sstar <- ggplot() + theme_bw() +
+  geom_rect(data=filter(calls, chr==18),aes(xmin=2.0e07, xmax=2.15e7, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.01) +
+  geom_rect(data=filter(calls, chr==18),aes(xmin=2.9e07, xmax=3.05e7, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.01) +
+  geom_segment(data=filter(calls, chr==18, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, chr==18, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==18, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Sstar.2016 Calls ; masking overlap w/ YRI') +
+  coord_cartesian(xlim=c(2e07, 4e07)) +
+  theme()
+
+plot.m.IBDmix <- ggplot() + theme_bw() +
+  geom_rect(data=filter(calls, chr==18),aes(xmin=2.0e07, xmax=2.15e7, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.01) +
+  geom_rect(data=filter(calls, chr==18),aes(xmin=2.9e07, xmax=3.05e7, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.01) +
+  geom_segment(data=filter(calls, chr==18, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==18, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==18, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; masking overlap w/ YRI') +
+  coord_cartesian(xlim=c(2e07, 4e07)) +
+  theme()
+
+grid.arrange(plot.m.Sstar, plot.m.IBDmix, plot.u.IBDmix, ncol = 1)
+
+```
+
+
+```{r Using AdpativeRegions.2016.callset}
+
+Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('POU3F2|POU2F3|OCA2|OAF|TLR10|TLR6|TLR1|OAS1|OAS2|OAS3|BNC2|LYPD6B|WDR88|GPATCH1|TNFAIP3')))
+
+tg <- Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('OAS1|OAS2|OAS3')))
+tg <- Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('POU2F3')))
+tg <- Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('GPATCH1')))
+tg <- Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('BNC2')))
+tg <- Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('TLR')))
+
+tg <- Adaptive.2016.callset %>% filter(str_detect(Nearest_Genes, c('LYPD6')))
+tg2 <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol == 'LYPD6')
+
+tg <- tg[1,]
+
+xlim <- NULL
+xlim <- c(14.9e07, 15.1e07)
+
+plot.u.IBDmix <- ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; no masking overlap w/ YRI') +
+  coord_cartesian(xlim=xlim) +
+  geom_rect(data=filter(calls, chr==tg$chr),aes(xmin=tg$extended_LD_start-5000, xmax=tg$extended_LD_end+5000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  geom_rect(data=filter(calls, chr==tg2$hg19.knownGene.chrom),aes(xmin=tg2$hg19.knownGene.txStart, xmax=tg2$hg19.knownGene.txEnd, ymin=0, ymax=max(calls$ID.mod)), fill='steelblue1', alpha=0.0075) +
+  theme()
+
+
+plot.m.Sstar <- ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Sstar.2016 Calls ; masking overlap w/ YRI') +
+  coord_cartesian(xlim=xlim) +
+  geom_rect(data=filter(calls, chr==tg$chr),aes(xmin=tg$extended_LD_start-5000, xmax=tg$extended_LD_end+5000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  geom_rect(data=filter(calls, chr==tg2$hg19.knownGene.chrom),aes(xmin=tg2$hg19.knownGene.txStart, xmax=tg2$hg19.knownGene.txEnd, ymin=0, ymax=max(calls$ID.mod)), fill='steelblue1', alpha=0.0075) +
+  theme()
+
+plot.m.IBDmix <- ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$chr, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; masking overlap w/ YRI') +
+  coord_cartesian(xlim=xlim) +
+  geom_rect(data=filter(calls, chr==tg$chr),aes(xmin=tg$extended_LD_start-5000, xmax=tg$extended_LD_end+5000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  geom_rect(data=filter(calls, chr==tg2$hg19.knownGene.chrom),aes(xmin=tg2$hg19.knownGene.txStart, xmax=tg2$hg19.knownGene.txEnd, ymin=0, ymax=max(calls$ID.mod)), fill='steelblue1', alpha=0.0075) +
+  theme()
+
+grid.arrange(plot.m.Sstar, plot.m.IBDmix, plot.u.IBDmix, ncol = 1)
+
+
+```
+
+
+```{r OAF and POU2F3 hiFreq Regions}
+
+# GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% c('POU3F2','POU2F3', 'OCA2', 'OAF', 'TLR10','TLR6','TLR1', 'OAS1','OAS2','OAS3','BNC2','LYPD6B','WDR88','GPATCH1','TNFAIP3'))
+# 
+# tg <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% c('OAS1'))
+# tg2 <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% c('OAS2'))
+# tg3 <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% c('OAS3'))
+
+
+xlim <- NULL
+xlim <- c(11.3e07, 11.4e07)
+
+plot.u.IBDmix <- ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; no masking overlap w/ YRI') +
+  coord_cartesian(xlim=xlim) +
+  geom_rect(data=filter(calls, chr==tg$hg19.knownGene.chrom),aes(xmin=tg$hg19.knownGene.txStart-50000, xmax=tg$hg19.knownGene.txEnd+50000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  geom_rect(data=filter(calls, chr==tg2$hg19.knownGene.chrom),aes(xmin=tg2$hg19.knownGene.txStart-50000, xmax=tg2$hg19.knownGene.txEnd+50000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  theme()
+
+
+plot.m.Sstar <- ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Sstar.2016 Calls ; masking overlap w/ YRI') +
+  coord_cartesian(xlim=xlim) +
+  geom_rect(data=filter(calls, chr==tg$hg19.knownGene.chrom),aes(xmin=tg$hg19.knownGene.txStart-50000, xmax=tg$hg19.knownGene.txEnd+50000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  geom_rect(data=filter(calls, chr==tg2$hg19.knownGene.chrom),aes(xmin=tg2$hg19.knownGene.txStart-50000, xmax=tg2$hg19.knownGene.txEnd+50000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  theme()
+
+plot.m.IBDmix <- ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='sstar'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(calls, chr==tg$hg19.knownGene.chrom, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; masking overlap w/ YRI') +
+  coord_cartesian(xlim=xlim) +
+  geom_rect(data=filter(calls, chr==tg$hg19.knownGene.chrom),aes(xmin=tg$hg19.knownGene.txStart-50000, xmax=tg$hg19.knownGene.txEnd+50000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  geom_rect(data=filter(calls, chr==tg2$hg19.knownGene.chrom),aes(xmin=tg2$hg19.knownGene.txStart-50000, xmax=tg2$hg19.knownGene.txEnd+50000, ymin=0, ymax=max(calls$ID.mod)), fill='ivory1', color='black',linetype='dashed', alpha=0.0075) +
+  theme()
+
+grid.arrange(plot.m.Sstar, plot.m.IBDmix, plot.u.IBDmix, ncol = 1)
+
+
+```
+
+
+
+
+
+```{r collect calls in deserts}
+
+#create empty data table to place Wenqings calls in deserts into
+des.unmasked = data.table(NULL)
+des.masked = data.table(NULL)
+gen.des = data.table(NULL)
+
+## Unmaksed Callset
+for (i in 1:6){ 
+  des.i = filter(IBDmix.unmasked.callset, chr==Neand.depletions$chr[i], start>=Neand.depletions$start[i], end<=Neand.depletions$end[i])
+  des.unmasked = rbind(des.unmasked, des.i)
+}
+
+## Masked Callset
+for (i in 1:6){ 
+  des.i = filter(IBDmix.masked.callset, chr==Neand.depletions$chr[i], start>=Neand.depletions$start[i], end<=Neand.depletions$end[i])
+  des.masked = rbind(des.masked, des.i)
+}
+
+des.masked[,masked:='yes']
+des.unmasked[,masked:='no']
+
+des.calls <- rbind(des.masked, des.unmasked)
+#Arrange the desert list so AFR is at the top
+#and assign a new ID, so AFR are grouped together at the top of the plots
+des.calls = arrange(des.calls, anc, ID)
+des.calls[, ID.mod := .GRP, by = ID]
+
+```
+
+```{r collect genes in deserts}
+for (i in 1:6){ 
+  gen.i = filter(GenePosNames, 
+                 hg19.knownGene.chrom==Neand.depletions$chr[i], 
+                 hg19.knownGene.txStart>=Neand.depletions$start[i], 
+                 hg19.knownGene.txEnd<=Neand.depletions$end[i])
+  gen.des = rbind(gen.des, gen.i)
+}
+
+gen.des[,chr:=hg19.knownGene.chrom]
+
+## Keep only one location entry for each gene
+subset(gen.des,!duplicated(gen.des$hg19.kgXref.geneSymbol))
+
+```
+
+
+```{r plot in deserts}
+
+color.values <- c('EUR' = 'forestgreen','EAS'='indianred3','SAS'='cyan3', 'AFR'='mediumpurple4')
+
+plot.m <- ggplot() + theme_bw() +
+  geom_segment(data=filter(des.calls, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(des.calls, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+#  geom_rect(data=subset(gen.des,!duplicated(gen.des$hg19.kgXref.geneSymbol)), aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=1000, ymax=1050), color="blue") +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) + 
+  ggtitle('IBDmix Calls ; mask overlap w/ YRI') +
+  theme()
+
+
+plot.u <- ggplot() + theme_bw() +
+  geom_segment(data=filter(des.calls, masked=='yes'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=0) +
+  geom_segment(data=filter(des.calls, masked=='no'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(labels = scientific) +
+  scale_color_manual(values = color.values) +
+  ggtitle('IBDmix Calls ; no masking overlap w/ YRI') +
+  theme()
+
+grid.arrange(plot.m, plot.u, ncol = 1)
+
+```
+
+
