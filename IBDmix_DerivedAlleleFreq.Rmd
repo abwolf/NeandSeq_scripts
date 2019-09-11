@@ -46,14 +46,14 @@ IBDmix.AFR.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAll
 
 #########
 #########
-sstar.EAS.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/Sstar_2015/test.chr*.EAScalls_sstar.derived_allele_freq',
-                                       col.names=c(names,'blnk'))
-sstar.EAS.derived_allele_freq[,source:='sstar']
-
-
-sstar.EUR.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/Sstar_2015/test.chr*.EURcalls_sstar.derived_allele_freq',
-                                       col.names=c(names,'blnk'))
-sstar.EUR.derived_allele_freq[,source:='sstar']
+# sstar.EAS.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/Sstar_2015/test.chr*.EAScalls_sstar.derived_allele_freq',
+#                                        col.names=c(names,'blnk'))
+# sstar.EAS.derived_allele_freq[,source:='sstar']
+# 
+# 
+# sstar.EUR.derived_allele_freq <- fread('cat ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/Sstar_2015/test.chr*.EURcalls_sstar.derived_allele_freq',
+#                                        col.names=c(names,'blnk'))
+# sstar.EUR.derived_allele_freq[,source:='sstar']
 
 
 ```
@@ -61,24 +61,24 @@ sstar.EUR.derived_allele_freq[,source:='sstar']
 
 
 ```{r Calculate 99th Percentile for derived alleles}
-quantile(IBDmix.EAS.derived_allele_freq$d_EUR_EAS, c(0.99, 0.01))
-
-IBDmix.EAS.derived_allele_freq %>% filter(d_EUR_EAS < -0.1920624 | d_EUR_EAS > 0.1844024 ) %>% 
-  filter(AFR==0.0) %>% 
-  nrow()
-
-
-quantile(IBDmix.EUR.derived_allele_freq[der_allele==Neand_call]$d_EUR_EAS, c(0.99, 0.01))
-
-IBDmix.EUR.derived_allele_freq %>% filter(d_EUR_EAS > 0.18146 | d_EUR_EAS < -0.19237 ) %>% 
-  filter(AFR==0.0) %>% 
-  nrow()
+# quantile(IBDmix.EAS.derived_allele_freq$d_EUR_EAS, c(0.99, 0.01))
+# 
+# IBDmix.EAS.derived_allele_freq %>% filter(d_EUR_EAS < -0.19 | d_EUR_EAS > 0.18 ) %>% 
+#   filter(AFR==0.0) %>% 
+#   nrow()
+# 
+# 
+# quantile(IBDmix.EUR.derived_allele_freq[der_allele==Neand_call]$d_EUR_EAS, c(0.99, 0.01))
+# 
+# IBDmix.EUR.derived_allele_freq %>% filter(d_EUR_EAS > 0.18146 | d_EUR_EAS < -0.19237 ) %>% 
+#   filter(AFR==0.0) %>% 
+#   nrow()
 
 
 quantile(filter(IBDmix.EUREAS.derived_allele_freq, der_allele==Neand_call)$d_EUR_EAS, c(0.99, 0.01))
 quantile(filter(IBDmix.EUREAS.derived_allele_freq, der_allele==Neand_call)$AFR, c(0.01))
 
-IBDmix.EUREAS.derived_allele_freq %>% filter(d_EUR_EAS > 0.18220 | d_EUR_EAS < -0.19148 ) %>% 
+IBDmix.EUREAS.derived_allele_freq %>% filter(d_EUR_EAS > 0.4 | d_EUR_EAS < -0.4 ) %>% 
   filter(AFR==0.0) %>% 
   filter(Neand_call==der_allele) %>%
   nrow()
@@ -99,28 +99,28 @@ IBDmix.AFR.derived_allele_freq %>%
 
 ```{r Derived allele Percentile plots}
 
-ggplot() +
-  geom_point(data= IBDmix.EAS.derived_allele_freq %>% 
-                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-                 filter(AFR==0.0),
-             aes(x=EUR, y=EAS, color="EAS")) +
-  geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
-                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-                 filter(AFR==0.0),
-             aes(x=EUR, y=EAS, color="EUR"))
-
-
-ggplot() +
-  geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
-                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-                 filter(AFR<=0.00),
-             aes(x=EUR, y=EAS, color="EUR"))
-
-
-ggplot() +
-  geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
-                 filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ),
-             aes(x=EUR, y=EAS, color="EUR"))
+# ggplot() +
+#   geom_point(data= IBDmix.EAS.derived_allele_freq %>% 
+#                  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+#                  filter(AFR==0.0),
+#              aes(x=EUR, y=EAS, color="EAS")) +
+#   geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
+#                  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+#                  filter(AFR==0.0),
+#              aes(x=EUR, y=EAS, color="EUR"))
+# 
+# 
+# ggplot() +
+#   geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
+#                  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+#                  filter(AFR<=0.00),
+#              aes(x=EUR, y=EAS, color="EUR"))
+# 
+# 
+# ggplot() +
+#   geom_point(data= IBDmix.EUR.derived_allele_freq %>% 
+#                  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ),
+#              aes(x=EUR, y=EAS, color="EUR"))
 
 
 ggplot() +
@@ -174,25 +174,25 @@ ggplot() +
 ```{r}
 
 
-EUR_hifreq_derived <- 
-  IBDmix.EUREAS.derived_allele_freq %>%
-#  IBDmix.EUREAS.derived_allele_freq %>%
-  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-  filter(AFR<=0.01) %>%
-  filter(EUR > 0.5 & EAS< 0.1) %>%
-  as.data.table()
-#  nrow()
-#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
-  
-   
-EAS_hifreq_derived <- 
-  IBDmix.EUREAS.derived_allele_freq %>%
-  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-  filter(AFR<=0.01) %>%
-  filter(EUR < 0.1 & EAS > 0.5) %>%
-  as.data.table()
-#  nrow()
-#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+# EUR_hifreq_derived <- 
+#   IBDmix.EUREAS.derived_allele_freq %>%
+# #  IBDmix.EUREAS.derived_allele_freq %>%
+#   filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+#   filter(AFR<=0.01) %>%
+#   filter(EUR > 0.5 & EAS< 0.1) %>%
+#   as.data.table()
+# #  nrow()
+# #  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+#   
+#    
+# EAS_hifreq_derived <- 
+#   IBDmix.EUREAS.derived_allele_freq %>%
+#   filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+#   filter(AFR<=0.01) %>%
+#   filter(EUR < 0.1 & EAS > 0.5) %>%
+#   as.data.table()
+# #  nrow()
+# #  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
 
 
 EUREAS_hifreq_derived <-
@@ -202,11 +202,11 @@ EUREAS_hifreq_derived <-
   filter(AFR<=0.01) %>%
   filter( (EUR>0.4 & EAS<0.1) | (EAS>0.4 & EUR<0.1) ) %>%
   # nrow()
-  as.data.table()
-#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+  as.data.table() %>%
+  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
 
   
-dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed  ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed | sort-bed - | bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.bed -' , col.names = c(names, 'blnk','source','d_EUR_EAS','count'))
+dt <- fread('bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUREAS_hifreq_DerivedAlleles.bed ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed' , col.names = c(names, 'blnk','source','d_EUR_EAS','count'))
 
 
 AFR_hifreq_derived <- 
@@ -216,10 +216,10 @@ AFR_hifreq_derived <-
   filter(der_allele==Neand_call) %>%
 #  nrow()
   as.data.table()
-#  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/AFR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE) 
+  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/AFR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE) 
 
 
-dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed | bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/AFR_hifreq_DerivedAlleles.bed -' , col.names = c(names, 'blnk','source','d_AFR_EAS', 'd_AFR_EUR', 'count'))
+dt <- fread('bedmap --ec --delim "\t" --echo --count ~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/AFR_hifreq_DerivedAlleles.bed ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed' , col.names = c(names, 'blnk','source','d_AFR_EAS', 'd_AFR_EUR', 'count'))
 
 
 ```
@@ -227,18 +227,19 @@ dt <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.fina
 
 ```{r}
 
-Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt', header=TRUE)
+Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.LOD4.50K.filterAFRDeni.txt', header=FALSE,
+                                   col.names =c('chr','start','end','score1','score2','length_bp','pop','anc','ID'))
 
-color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple3', 'AMR'='plum','YRI'='dodgerblue1')
 ancestry.levels <- c('AFR','EUR','EAS','SAS', 'AMR')
-ancestry.levels <- c('AFR','EUR','EAS')
+#ancestry.levels <- c('AFR','EUR','EAS')
 
 
 calls = Altai.2013.p_SingleArchaic %>% select(ID, chr, start, end, pop, anc) %>%
         mutate(anc = factor(anc, levels = ancestry.levels)) %>%
         filter(anc %in% c('AFR','EUR','EAS')) %>%
-        arrange(anc, pop, ID)
-calls[, ID.mod := .GRP, by = ID]
+        arrange(anc, pop, ID) %>% as.data.table()
+calls[, ID.mod := .GRP, by = c('anc','ID')]
 
 
 Sstar.2016.callset =  fread('~/OLDAKEYLab/akey_vol2/bvernot/archaic_1kg_p3/data/call_set_2015.11.06/LL.callsetALL.mr_0.99.ALL_calls_by_hap.bed.merged.by_chr.bed.sorted',
@@ -270,55 +271,71 @@ GenePosNames.uniq <- subset(GenePosNames,!duplicated(GenePosNames$hg19.kgXref.ge
 
 gwasSNPs <- fread( 'gzcat ~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/GWAS.nobackup/gwasdb_20150819_snp_trait.gz', header = TRUE)
 
+EUR_AFR.overlap_calls <- fread('bedmap --ec --delim "\t" --echo --bases-uniq-f --count ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                               col.names = c('chr','start','end','bases_uniq_f','count'))
+
+drop.table <- data.table(
+              chr = numeric(),
+              start = numeric(),
+              end = numeric()
+              )
+```
+
+```{r}
 #########
 #########
 
-EUR_hifreq_derived %>% arrange(chr,start)
+# For EUR/EAS calls
+dt %>% arrange(desc(d_EUR_EAS), desc(count))
 
-EUREAS_hifreq_derived %>% arrange(chr,start)
+# For AFR specific calls
+dt %>% filter(EUR < 0.05 & EAS < 0.05) %>% arrange(desc(count), desc(d_AFR_EAS))
 
-dt <- dt %>% filter(count>=10, Neand_call==der_allele) %>%  arrange(count)
-
-dt %>% arrange(desc(d_EUR_EAS), desc(count)) %>%
-  #filter(EUR < 0.05 & EAS < 0.05) %>% 
-  head()
-c <- 8
-st <- 82192717 - 500000
-ed <- 82192717 + 500000
+c <-  dt %>% arrange(desc(d_EUR_EAS), desc(count)) %>% head(n=1) %>% select(chr) %>% as.numeric() 
+st <- dt %>% arrange(desc(d_EUR_EAS), desc(count)) %>% head(n=1) %>% select(start) %>% as.numeric() - 500000
+ed <- dt %>% arrange(desc(d_EUR_EAS), desc(count)) %>% head(n=1) %>% select(end) %>% as.numeric() + 500000
 
 tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
-tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed) 
-tp <- AFR_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
-#tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
-#tp <- rbind(tp,IBDmix.EAS.derived_allele_freq %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call, AFR < 0.01, d_EUR_EAS < 0.05 & d_EUR_EAS > -0.05))
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+tp <- AFR_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call) %>% select(1:15)
+tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed)
+#tp <- rbind(tp,IBDmix.EUREAS.derived_allele_freq %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call, AFR < 0.01, d_EUR_EAS < 0.05 & d_EUR_EAS > -0.05)  %>% select(1:15))
 gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed) , P_VALUE <= 1.0e-8)
 #gws <- gwasSNPs %>% filter(CHR==c & POS %in% c(tp$start, tp$end), P_VALUE <= 1.0e-8)
 
-#plot.IBDmix <- 
+
+
   ggplot() + theme_bw() +
   geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
   geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
  # geom_rect(data=tg, aes(xmin=min(tg$extended_LD_start), xmax=max(tg$extended_LD_end), ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) + 
   facet_wrap(~chr, scales = "free_x") +
   xlab('genomic_position') +
-  scale_x_continuous(breaks = seq(st,ed,by = 100000)) +
+  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 5)) +
   scale_color_manual(values = color.values) +
   ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
   coord_cartesian(xlim=c(st, ed)) +
   geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
   geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=3, angle=45) +
-#   geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
-# #  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
-   geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
+#  geom_point(data = tg, aes(x=start+haplo_len/2, y=max(calls$ID.mod)+100, fill=as.factor(GWAS_SNP)), size=3) +
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
   theme(    
     plot.title=element_text(face="bold"),
     axis.text=element_text(face="bold"),
-    axis.title=element_text(face="bold"))
+    axis.title=element_text(face="bold"),
+    axis.text.x = element_text(angle = 45))
 
-  
-dt <- anti_join(dt, tp, by=c('chr','start','end')) %>% as.data.table()
+    
+drop.table <- rbind(drop.table, data.table(chr=c,
+                                           start=st+500000,
+                                           end=ed-500000))
 
+dt <- anti_join(dt, drop.table, by=c('chr','start','end')) %>% as.data.table()
+```
 
+```{r}
+########
 #   ggplot() + theme_bw() +
 #   geom_segment(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
 #    geom_rect(data=filter(Sstarcalls, chr==c, start>st, end<ed), aes(xmin=st+500000, xmax=ed-500000, ymin=-10, ymax=max(calls$ID.mod)+10), linetype="dashed", color="black", fill=NA) +
@@ -342,129 +359,266 @@ dt <- anti_join(dt, tp, by=c('chr','start','end')) %>% as.data.table()
 
 ```{r Plots for journal}
 
-## ASXL3 ##
-c <- 18
-st <- 31158540 - 300000
-ed <- 31158540 + 300000
+# ## ASXL3 ##
+# c <- 18
+# st <- 31158540 - 500000
+# ed <- 31158540 + 500000
+
+# ## OXGR1 ; AFR Specific##
+# c <- 13
+# st <- 97692062 - 300000
+# ed <- 97692062 + 300000
+
+## PAK1IP ; AFR Specific
+c <- 6
+st <- 10661435 - 300000
+ed <- 10758890 + 300000
+
+PAK11P1 <- fread('~/Downloads/PAK11P1')
+
+C6orf_exons <- cbind(
+  PAK11P1[1]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  PAK11P1[1]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+PAK1IP1_exons <- cbind(
+  PAK11P1[4]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  PAK11P1[4]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+TMEM14C_exons <- cbind(
+  PAK11P1[5]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  PAK11P1[5]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+TMEM14B_exons <- cbind(
+  PAK11P1[10]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  PAK11P1[10]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
 
 tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
 tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
-tp <- AFR_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
+#tg2 <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% 'OXGR1')
+tp <- rbind(AFR_hifreq_derived, EUREAS_hifreq_derived, fill=TRUE) %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
 gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
 
-  ggplot() + theme_classic() +
-  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
-  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
-  xlab('Genomic Position') +
-  ylab('1000 Genomes Project Individuals') + 
-  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
-  scale_color_manual(values = color.values) +
-  coord_cartesian(xlim=c(st, ed)) +
-  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
-  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+calls.temp <-
+  calls %>%
+  filter(chr==c, start>st, end<ed) %>% 
+  mutate(carrier=1) %>% 
+  full_join(unique(select(calls, anc, ID.mod)), copy = TRUE, by = 'ID.mod') %>%
+  mutate(anc=anc.y) %>% mutate(anc = factor(anc, levels = ancestry.levels)) %>% select(-anc.x, -anc.y) %>%
+  mutate(carrier=ifelse(is.na(carrier),0,1)) %>% 
+  arrange(anc, carrier, ID.mod) %>% as.data.table()
 
-  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
-  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
-  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+calls.temp[,ID.mod2 := .GRP, by='ID.mod']
+
+
+ggplot() + theme_classic() +
+  annotate("rect", xmin=10661000, xmax=10759000, ymin=range(calls[anc=='EAS']$ID.mod)[1], ymax=range(calls[anc=='EAS']$ID.mod)[2]+1, fill='green4', alpha=0.3) +
+  annotate("rect", xmin=10661000, xmax=10759000, ymin=range(calls[anc=='EUR']$ID.mod)[1], ymax=range(calls[anc=='EUR']$ID.mod)[2]+1, fill='orange3', alpha=0.3) +
+  annotate("rect", xmin=10661000, xmax=10759000, ymin=range(calls[anc=='AFR']$ID.mod)[1], ymax=range(calls[anc=='AFR']$ID.mod)[2]+1, fill='mediumpurple3', alpha=0.3) +
+  
+  annotate("text", label="AFR", x = 10657000, y = 250, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  annotate("text", label="EUR", x = 10657000, y = 756, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  annotate("text", label="EAS", x = 10657000, y = 1260, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  
+  geom_segment(data=filter(calls.temp, chr==c), aes(x=start, xend=end, y=ID.mod2, yend=ID.mod2, color=as.factor(anc)), alpha=1) +
+  #geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  # geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  xlab('Chromosome 6 (Mb)') +
+  ylab('') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 25000), labels=round(x = seq(st,ed,by = 25000)/1000000, digits = 2), position = "top") +
+  scale_color_manual(values = color.values) +
+  
+   geom_rect(data=C6orf_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+   geom_rect(data=PAK1IP1_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+   geom_rect(data=TMEM14C_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +  
+   geom_rect(data=TMEM14B_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+   geom_rect(data=slice(PAK11P1, c(1,4,5,10)), aes(xmin=txStart, xmax=txEnd, ymin=max(calls$ID.mod)+220, ymax=max(calls$ID.mod)+230), fill='steelblue4', alpha=1) +
+
+    geom_text(data=slice(PAK11P1, c(1,4,5,10)), aes(x=(txEnd-txStart)/2+txStart, y= max(calls$ID.mod)+300, label=name2), fontface = "bold", family="Helvetica", size=6, check_overlap = TRUE , angle=0, nudge_y = 30, nudge_x = 0) +
+  
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+150), size=5, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+50), size=5, color="red") +
+  coord_cartesian(xlim = c(10660000, 10756500)) +
   theme(
     legend.position='none',
-    plot.title=element_text(face="bold"),
-    axis.text=element_text(face="bold"),
-    axis.title=element_text(face="bold"),
+    axis.text=element_text(face="bold", family = "Helvetica"),
+    axis.title=element_text(face="bold", family = "Helvetica"),
     panel.grid=element_blank(),
     axis.ticks.y=element_blank(),
-    panel.border = element_rect(colour = "black", fill=NA, size=2),
-    plot.title=element_text(face="bold", size=20),
-    axis.text.x=element_text(face="bold", size=15),
+    axis.line.y = element_blank(),
+    #panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20, family = "Helvetica"),
+    axis.text.x=element_text(face="bold", color="black", size=15, family = "Helvetica"),
     axis.text.y=element_blank(),
-    axis.title.x=element_text(face="bold", size=15),
-    axis.title.y=element_text(face="bold", size=15))
+    axis.title.x=element_text(face="bold", size=15, family = "Helvetica"),
+    axis.title.y=element_text(face="bold", size=15, family = "Helvetica"))
 
 
   
 ## TRIM55;CRH ##
 c <- 8
 st <- 67075544 - 300000
-ed <- 67075544 + 300000  
+ed <- 67075544 + 300000
+
+
+TRIM55 <- fread('~/Downloads/TRIM55')
+
+TRIM55_exons <- cbind(
+  TRIM55[1]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  TRIM55[1]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+CRH_exons <- cbind(
+  TRIM55[5]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  TRIM55[5]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
 
   tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
-  tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+  tg2 <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% c('TRIM55', 'CRH'))
   tp <- rbind(AFR_hifreq_derived, EUREAS_hifreq_derived, fill=TRUE) %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
   gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
 
+  calls.temp <-
+  calls %>%
+  filter(chr==c, start>st, end<ed) %>% 
+  mutate(carrier=1) %>% 
+  full_join(unique(select(calls, anc, ID.mod)), copy = TRUE, by = 'ID.mod') %>%
+  mutate(anc=anc.y) %>% mutate(anc = factor(anc, levels = ancestry.levels)) %>% select(-anc.x, -anc.y) %>%
+  mutate(carrier=ifelse(is.na(carrier),0,1)) %>% 
+  arrange(anc, carrier, ID.mod) %>% as.data.table()
+  
+  calls.temp[,ID.mod2 := .GRP, by='ID.mod']
+  
+  
   ggplot() + theme_classic() +
-  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
-  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
-  xlab('Genomic Position') +
-  ylab('1000 Genomes Project Individuals') + 
-  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
-  scale_color_manual(values = color.values) +
-  coord_cartesian(xlim=c(st, ed)) +
-  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
-  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+  annotate("rect", xmin=67013000, xmax=67128000, ymin=range(calls[anc=='EAS']$ID.mod)[1], ymax=range(calls[anc=='EAS']$ID.mod)[2], fill='green4', alpha=0.3) +
+  annotate("rect", xmin=67013000, xmax=67128000, ymin=range(calls[anc=='EUR']$ID.mod)[1], ymax=range(calls[anc=='EUR']$ID.mod)[2], fill='orange3', alpha=0.3) +
+  annotate("rect", xmin=67013000, xmax=67128000, ymin=range(calls[anc=='AFR']$ID.mod)[1], ymax=range(calls[anc=='AFR']$ID.mod)[2], fill='mediumpurple3', alpha=0.3) +
 
-  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
-  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
-  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+   annotate("text", label="AFR", x = 67007000, y = 250, fontface = "bold", family="Helvetica", size=10, angle=90) +
+   annotate("text", label="EUR", x = 67007000, y = 756, fontface = "bold", family="Helvetica", size=10, angle=90) +
+   annotate("text", label="EAS", x = 67007000, y = 1260, fontface = "bold", family="Helvetica", size=10, angle=90) +
+    
+  geom_segment(data=filter(calls.temp, chr==c), aes(x=start, xend=end, y=ID.mod2, yend=ID.mod2, color=as.factor(anc)), alpha=1) +
+ # geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+ # geom_segment(data=filter(calls, pop=='YRI', chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  xlab('Chromosome 8 (Mb)') +
+#  ylab('1000 Genomes Project Individuals') +
+  ylab('') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 25000), labels=round(x = seq(st,ed,by = 25000)/1000000, digits = 2), position = "top") +
+  scale_color_manual(values = color.values) +
+    
+  
+  geom_rect(data=CRH_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=TRIM55_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=slice(TRIM55,c(1,5)), aes(xmin=txStart, xmax=txEnd, ymin=max(calls$ID.mod)+220, ymax=max(calls$ID.mod)+230), fill='steelblue4', alpha=1) + 
+  #geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue1', alpha=1) +
+  
+  geom_text(data = tg2, aes(x=(hg19.knownGene.cdsStart+(hg19.knownGene.cdsEnd-hg19.knownGene.cdsStart)/2), y= max(calls$ID.mod)+300, label=hg19.kgXref.geneSymbol), fontface = "bold", family="Helvetica", size=6, check_overlap = FALSE , angle=0, nudge_y = 30, nudge_x = 0) +
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+150), size=5, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+50), size=5, color="red") +
+  coord_cartesian(xlim = c(67010000, 67123000)) +
   theme(
     legend.position='none',
-    plot.title=element_text(face="bold"),
-    axis.text=element_text(face="bold"),
-    axis.title=element_text(face="bold"),
+    axis.text=element_text(face="bold", family = "Helvetica"),
+    axis.title=element_text(face="bold", family = "Helvetica"),
     panel.grid=element_blank(),
     axis.ticks.y=element_blank(),
-    panel.border = element_rect(colour = "black", fill=NA, size=2),
-    plot.title=element_text(face="bold", size=20),
-    axis.text.x=element_text(face="bold", size=15),
+    axis.line.y = element_blank(),
+    #panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20, family = "Helvetica"),
+    axis.text.x=element_text(face="bold", color="black", size=15, family = "Helvetica"),
     axis.text.y=element_blank(),
-    axis.title.x=element_text(face="bold", size=15),
-    axis.title.y=element_text(face="bold", size=15))
+    axis.title.x=element_text(face="bold", size=15, family = "Helvetica"),
+    axis.title.y=element_text(face="bold", size=15, family = "Helvetica"))
   
 
 ## POU2F3 ##
 c <- 11
 st <- 120154630 - 300000
 ed <- 120154630 + 300000 
-  
+
+POU2F3 <- fread('~/Downloads/POU2F3 (1)')
+
+POU2F3_exons <- cbind(
+  POU2F3[1]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  POU2F3[1]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
   tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
-  tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
+  tg2 <- GenePosNames.uniq %>% filter(hg19.kgXref.geneSymbol %in% c('POU2F3'))
+  #tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed)
   tp <- EUREAS_hifreq_derived %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
   gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-5)
 
-  ggplot() + theme_classic() +
-  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)+25), color=NA, fill="grey", alpha=0.5) +
-  #geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=max(calls$ID.mod)+10, ymax=max(calls$ID.mod)+35), color=NA, fill="grey50", alpha=1) +
-    
-  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
-  xlab('Genomic Position') +
-  ylab('1000 Genomes Project Individuals') + 
-  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
-  scale_color_manual(values = color.values) +
-  coord_cartesian(xlim=c(st, ed)) +
-  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
-  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+  
+  calls.temp <-
+  calls %>%
+  filter(chr==c, start>st, end<ed) %>% 
+  mutate(carrier=1) %>% 
+  full_join(unique(select(calls, anc, ID.mod)), copy = TRUE, by = 'ID.mod') %>%
+  mutate(anc=anc.y) %>% mutate(anc = factor(anc, levels = ancestry.levels)) %>% select(-anc.x, -anc.y) %>%
+  mutate(carrier=ifelse(is.na(carrier),0,1)) %>% 
+  arrange(anc, carrier, ID.mod) %>% as.data.table()
+  
+  calls.temp[,ID.mod2 := .GRP, by='ID.mod']
+  
 
-  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
-  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
-  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  ggplot() + theme_classic() +
+  annotate("rect", xmin=120105000, xmax=120505000, ymin=range(calls[anc=='EAS']$ID.mod)[1], ymax=range(calls[anc=='EAS']$ID.mod)[2], fill='green4', alpha=0.3) +
+  annotate("rect", xmin=120105000, xmax=120505000, ymin=range(calls[anc=='EUR']$ID.mod)[1], ymax=range(calls[anc=='EUR']$ID.mod)[2]+1, fill='orange3', alpha=0.3) +
+  annotate("rect", xmin=120105000, xmax=120505000, ymin=range(calls[anc=='AFR']$ID.mod)[1], ymax=range(calls[anc=='AFR']$ID.mod)[2]+1, fill='mediumpurple3', alpha=0.3) +
+  
+    
+  geom_segment(data=filter(calls.temp,chr==c), aes(x=start, xend=end, y=ID.mod2, yend=ID.mod2, color=as.factor(anc)), alpha=1) +
+  annotate("rect", xmin=120000000, xmax = 120105000, ymin=0, ymax=1511, fill="white") +
+  
+  annotate("text", label="AFR", x = 120101800, y = 250, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  annotate("text", label="EUR", x = 120101800, y = 756, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  annotate("text", label="EAS", x = 120101800, y = 1260, fontface = "bold", family="Helvetica", size=10, angle=90) +  
+    
+  #geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  #geom_segment(data=filter(calls,chr==c), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  xlab('Chromosome 11 (Mb)') +
+  #ylab('1000 Genomes Project Individuals') +
+  ylab('') +
+  scale_x_continuous(breaks = seq(st,ed,by = 25000), labels=round(x = seq(st,ed,by = 25000)/1000000, digits = 2), position = "top") +
+  scale_color_manual(values = color.values) +
+    
+  geom_rect(data=POU2F3_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=slice(POU2F3,1), aes(xmin=txStart, xmax=txEnd, ymin=max(calls$ID.mod)+220, ymax=max(calls$ID.mod)+230), fill='steelblue4', alpha=1) +
+  #geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue1', alpha=1) +
+  
+    #geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=0, nudge_y = 30, nudge_x = 0.5e4) +
+  geom_text(data = tg2, aes(x=120150000, y= max(calls$ID.mod)+300, label=hg19.kgXref.geneSymbol), fontface = "bold", size=6, check_overlap = TRUE , angle=0, nudge_y = 30, family = "Helvetica") +
+    
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+150), size=5, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+50), size=5, color="red") +
+  #coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  coord_cartesian(xlim = c(120105000, 120205000)) +
   theme(
     legend.position='none',
-    plot.title=element_text(face="bold"),
-    axis.text=element_text(face="bold"),
-    axis.title=element_text(face="bold"),
+    axis.text=element_text(face="bold", family = "Helvetica"),
+    axis.title=element_text(face="bold", family = "Helvetica"),
     panel.grid=element_blank(),
     axis.ticks.y=element_blank(),
-    panel.border = element_rect(colour = "black", fill=NA, size=2),
-    plot.title=element_text(face="bold", size=20),
-    axis.text.x=element_text(face="bold", size=15),
+    axis.line.y = element_blank(),
+    #panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20, family = "Helvetica"),
+    axis.text.x=element_text(face="bold", color="black", size=15, family = "Helvetica"),
     axis.text.y=element_blank(),
-    axis.title.x=element_text(face="bold", size=15),
-    axis.title.y=element_text(face="bold", size=15))
+    axis.title.x=element_text(face="bold", size=15, family = "Helvetica"),
+    axis.title.y=element_text(face="bold", size=15, family = "Helvetica"))
     
 
 ## TLR1|6|10 ##
   
-  EUREAS_alt_hifreq_derived <- 
+  EUREAS_alt_hifreq_derived <- #as.data.table(NULL)
   IBDmix.AFR.derived_allele_freq %>%
   filter(d_AFR_EAS < -0.2 ) %>%
   filter(d_AFR_EUR < -0.2 ) %>%
@@ -477,40 +631,91 @@ c <- 4
 st <- 38518643 - 500000
 ed <- 38518643 + 500000
 
+TLR <- fread('~/Downloads/TLR')
+
+KLF3_exons <- cbind(
+  TLR[2]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  TLR[2]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+TLR10_exons <- cbind(
+  TLR[3]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  TLR[3]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+TLR1_exons <- cbind(
+  TLR[8]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  TLR[8]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+TLR6_exons <- cbind(
+  TLR[9]$exonStarts %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonStart'),
+  TLR[9]$exonEnds %>% str_split(',') %>% as.data.table() %>% setnames('V1','exonEnd')
+)
+
+
+
   tg <- Adaptive.2016.callset %>% filter(chr==c & start > st & end < ed)
   tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > st & hg19.knownGene.txEnd < ed) %>% filter(!hg19.kgXref.geneSymbol %in% c("FLJ13197"))
   tp <- rbind(EUREAS_hifreq_derived, EUREAS_alt_hifreq_derived, fill=TRUE) %>% filter(chr==c & start>=st & end <= ed, der_allele==Neand_call)
   gws <- gwasSNPs %>% filter(CHR==c & POS %in% seq(st, ed), P_VALUE <= 1.0e-8)
 
-  ggplot() + theme_classic() +
-  geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=0, ymax=max(calls$ID.mod)+25), color=NA, fill="grey", alpha=0.5) +
-  #geom_rect(data=tg, aes(xmin=start,xmax=end, ymin=max(calls$ID.mod)+10, ymax=max(calls$ID.mod)+35), color=NA, fill="grey50", alpha=1) +
   
-  geom_segment(data=filter(calls, chr==c, start>st, end<ed), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
-  xlab('Genomic Position') +
-  ylab('1000 Genomes Project Individuals') + 
-  scale_x_continuous(breaks = seq(st,ed,by = 100000), labels=scientific(x = seq(st,ed,by = 100000), digits = 4)) +
-  scale_color_manual(values = color.values) +
-  coord_cartesian(xlim=c(st, ed)) +
-  geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
-  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), fontface = "bold", size=5, check_overlap = TRUE , angle=45, nudge_y = 30, nudge_x = 0.5e4) +
+  calls.temp <-
+  calls %>%
+  filter(chr==c, start>st, end<ed) %>% 
+  mutate(carrier=1) %>% 
+  full_join(unique(select(calls, anc, ID.mod)), copy = TRUE, by = 'ID.mod') %>%
+  mutate(anc=anc.y) %>% mutate(anc = factor(anc, levels = ancestry.levels)) %>% select(-anc.x, -anc.y) %>%
+  mutate(carrier=ifelse(is.na(carrier),0,1)) %>% 
+  arrange(anc, carrier, ID.mod) %>% as.data.table()
+  
+  calls.temp[,ID.mod2 := .GRP, by='ID.mod']
+  
+  
+  ggplot() + theme_classic() +
+  annotate("rect", xmin=38600000, xmax=38920000, ymin=range(calls[anc=='EAS']$ID.mod)[1], ymax=range(calls[anc=='EAS']$ID.mod)[2], fill='green4', alpha=0.3) +
+  annotate("rect", xmin=38600000, xmax=38920000, ymin=range(calls[anc=='EUR']$ID.mod)[1], ymax=range(calls[anc=='EUR']$ID.mod)[2]+1, fill='orange3', alpha=0.3) +
+  annotate("rect", xmin=38600000, xmax=38920000, ymin=range(calls[anc=='AFR']$ID.mod)[1], ymax=range(calls[anc=='AFR']$ID.mod)[2]+1, fill='mediumpurple3', alpha=0.3) +  
+    
+  geom_segment(data=filter(calls.temp,chr==c), aes(x=start, xend=end, y=ID.mod2, yend=ID.mod2, color=as.factor(anc)), alpha=1) +
+  annotate("rect", xmin=38500000, xmax = 38605000, ymin=0, ymax=1525, fill="white") +
+  
+  annotate("text", label="AFR", x = 38595000, y = 250, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  annotate("text", label="EUR", x = 38595000, y = 756, fontface = "bold", family="Helvetica", size=10, angle=90) +
+  annotate("text", label="EAS", x = 38595000, y = 1260, fontface = "bold", family="Helvetica", size=10, angle=90) +  
 
-  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+100), size=3, color="purple4", shape=17) +
-  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+100), size=3, color="red") +
-  coord_cartesian(xlim = c(st + 100000, ed-100000)) +
+  xlab('Chromosome 4 (Mb)') +
+  ylab('') + 
+  scale_x_continuous(breaks = seq(st,ed,by = 25000), labels=round(x = seq(st,ed,by = 25000)/1000000, digits = 2), position = "top") +
+  scale_color_manual(values = color.values) +
+    
+  geom_rect(data=KLF3_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=TLR10_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=TLR6_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=TLR1_exons, aes(xmin=as.numeric(exonStart), xmax=as.numeric(exonEnd), ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue4', alpha=1) +
+  geom_rect(data=slice(TLR, c(2,3,8,9)), aes(xmin=txStart, xmax=txEnd, ymin=max(calls$ID.mod)+220, ymax=max(calls$ID.mod)+230), fill='steelblue4', alpha=1) +
+  #geom_rect(data=tg2, aes(xmin=hg19.knownGene.txStart, xmax=hg19.knownGene.txEnd, ymin=max(calls$ID.mod)+200, ymax=max(calls$ID.mod)+250), fill='steelblue1', alpha=1) +
+  
+    
+  geom_text(data = tg2, aes(x=hg19.knownGene.txStart, y= max(calls$ID.mod)+300, label=hg19.kgXref.geneSymbol), fontface = "bold", family="Helvetica", size=6, check_overlap = TRUE , angle=0, nudge_y = 30, nudge_x = 0.5e4) +
+
+  geom_point(data = gws, aes(x=POS, y=max(calls$ID.mod)+150), size=5, color="purple4", shape=17) +
+  geom_point(data = tp, aes(x=start, y=max(calls$ID.mod)+50), size=5, color="red") +
+  coord_cartesian(xlim = c(38600000, 38840000)) +
   theme(
     legend.position='none',
-    plot.title=element_text(face="bold"),
-    axis.text=element_text(face="bold"),
-    axis.title=element_text(face="bold"),
+    axis.text=element_text(face="bold", family = "Helvetica"),
+    axis.title=element_text(face="bold", family = "Helvetica"),
     panel.grid=element_blank(),
     axis.ticks.y=element_blank(),
-    panel.border = element_rect(colour = "black", fill=NA, size=2),
-    plot.title=element_text(face="bold", size=20),
-    axis.text.x=element_text(face="bold", size=15),
+    axis.line.y = element_blank(),
+    #panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20, family = "Helvetica"),
+    axis.text.x=element_text(face="bold", color="black", size=15, family = "Helvetica"),
     axis.text.y=element_blank(),
-    axis.title.x=element_text(face="bold", size=15),
-    axis.title.y=element_text(face="bold", size=15))
+    axis.title.x=element_text(face="bold", size=15, family = "Helvetica"),
+    axis.title.y=element_text(face="bold", size=15, family = "Helvetica"))
   
 ```
 

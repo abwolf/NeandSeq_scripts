@@ -35,7 +35,8 @@ while i in range(0,len(ls)):
 	bp=0
 	z=i
 	site_count=1
-	der_count=int(ls[i][4])
+	der_count=0
+	#der_count=int(ls[i][4])
 	while int(ls[z][1])-strt_bp<=50000:
 		bp=int(ls[z][1])-strt_bp
 		## NOTE: Only count IF(ARCH > 0)
@@ -47,7 +48,7 @@ while i in range(0,len(ls)):
 			site_count+=1
 		else:
 			break
-			
+
 
 	print(i, strt_bp, bp, site_count, der_count, file=sys.stdout)
 
@@ -62,6 +63,6 @@ while i in range(0,len(ls)):
 			print('END', file=sys.stderr)
 			break
 	i = new_i + 1
-	
+
 
 infile.close()

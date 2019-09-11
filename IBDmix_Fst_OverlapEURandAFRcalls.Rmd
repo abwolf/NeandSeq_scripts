@@ -1,0 +1,368 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "4/10/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(scales)
+library(RColorBrewer)
+library(grid)
+library(gridExtra)
+#library(vcfR)
+#library(PopGenome)
+library(stringr)
+```
+
+
+```{r Load Neand IBDmix calls and overlaps of EUR AFR calls}
+Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.LOD4.50K.filterAFRDeni.txt', header=FALSE,
+                                   col.names =c('chr','start','end','score1','score2','length_bp','pop','anc','ID'))
+
+color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+#ancestry.levels <- c('AFR','EUR','EAS','SAS', 'AMR')
+ancestry.levels <- c('AFR','EUR','EAS')
+
+
+calls = Altai.2013.p_SingleArchaic %>% select(ID, chr, start, end, pop, anc) %>%
+        mutate(anc = factor(anc, levels = ancestry.levels)) %>%
+        filter(anc %in% c('AFR','EUR','EAS')) %>%
+        arrange(anc, pop, ID) %>% as.data.table()
+calls[, ID.mod := .GRP, by = 'ID']
+
+# GenePosNames = fread('gzcat ~/OLDAKEYLab/akey_vol2/home/abwolf/AkeyRotation/NeandDepletions/RefSeqGenes.nobackup/Depletions.chrALL_FULL_RefSeqGeneIDs.gz', header=TRUE) %>%
+#                 rowwise() %>% mutate(hg19.knownGene.chrom=as.numeric(strsplit(hg19.knownGene.chrom, split = 'r')[[1]][[2]]))  %>%
+#                 filter(hg19.knownGene.chrom %in% seq(1,22,by = 1)) %>%
+#                 mutate(chr=hg19.knownGene.chrom) %>%
+#                 as.data.table()
+# 
+# GenePosNames.uniq <- subset(GenePosNames,!duplicated(GenePosNames$hg19.kgXref.geneSymbol)) %>% filter(!grepl("LOC[0-9]",hg19.kgXref.geneSymbol))
+
+GenePosNames.uniq <- fread('~/AKEYLab/bin/GenePosNames.hg19.uniq.txt', header=TRUE)
+
+
+EUR_AFR.overlap_calls <- fread('bedmap --ec --delim "\t" --echo --bases-uniq-f --count ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EURcalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                               col.names = c('chr','start','end','bases_uniq_f','count'))
+
+EAS_AFR.overlap_calls <- fread('bedmap --ec --delim "\t" --echo --bases-uniq-f --count ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EAScalls.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.bed',
+                               col.names = c('chr','start','end','bases_uniq_f','count'))
+
+coord.table <- data.table(NULL)
+drop.table <- data.table(
+              chr = numeric(),
+              start = numeric(),
+              end = numeric()
+              )
+```
+
+
+```{r Order overlaps and plot segments}
+
+EUR_AFR.overlap_calls %>% filter(count>=5, bases_uniq_f>=0.1) %>% arrange(desc(end-start), desc(count), desc(bases_uniq_f)) %>% head
+
+c <- EUR_AFR.overlap_calls %>% filter(count>=5, bases_uniq_f>=0.1) %>% arrange(desc(end-start), desc(count), desc(bases_uniq_f)) %>% head(n=1) %>% select(chr) %>% as.numeric() 
+st <- EUR_AFR.overlap_calls %>% filter(count>=5, bases_uniq_f>=0.1) %>% arrange(desc(end-start), desc(count), desc(bases_uniq_f)) %>% head(n=1) %>% select(start) %>% as.numeric()
+ed <- EUR_AFR.overlap_calls %>% filter(count>=5, bases_uniq_f>=0.1) %>% arrange(desc(end-start), desc(count), desc(bases_uniq_f)) %>% head(n=1) %>% select(end) %>% as.numeric()
+
+
+ dt <- AFR.EUR.fst %>% filter(fst_AFR_0_EUR_0-fst_AFR_N_EUR_N > 0.1) %>% arrange(fst_AFR_0_EUR_0-fst_AFR_N_EUR_N) %>% slice(31)
+ c <- dt %>% head(n=1) %>% select(chr) %>% as.numeric()
+ st <- dt %>% head(n=1) %>% select(start) %>% as.numeric()
+ ed <- dt %>% head(n=1) %>% select(end) %>% as.numeric()
+
+
+tg2 <- GenePosNames.uniq %>% filter(chr==c & hg19.knownGene.txStart > (st-500000) & hg19.knownGene.txEnd < (ed+500000)) 
+tg2 %>% nrow()
+
+
+ ggplot() + theme_bw() +
+  geom_segment(data=filter(calls, chr==c, start>(st-500000), end<(ed+500000), ID=='NA20764'), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(anc)), alpha=1) +
+  geom_segment(data=filter(calls, pop=='YRI', chr==c, start>(st-500000), end<(ed+500000)), aes(x=start, xend=end, y=ID.mod, yend=ID.mod, color=as.factor(pop)), alpha=1) +
+  facet_wrap(~chr, scales = "free_x") +
+  xlab('genomic_position') +
+  scale_x_continuous(breaks = seq((st-500000),(ed+500000),by = 100000), labels=scientific(x = seq((st-500000),(ed+500000),by = 100000), digits = 5)) +
+  scale_color_manual(values = color.values) +
+  ggtitle('Altai.2013.p_SingleArchaic ; IBDmix Calls') +
+  coord_cartesian(xlim=c(st-500000, ed+500000),ylim=c(0,1700)) +
+  geom_rect(data=tg2, aes(xmin=hg19.knownGene.cdsStart, xmax=hg19.knownGene.cdsEnd, ymin=max(calls$ID.mod)+50, ymax=max(calls$ID.mod)+150), fill='steelblue1', alpha=1) +
+  geom_text(data = tg2, aes(x=hg19.knownGene.cdsStart, y= max(calls$ID.mod)+200, label=hg19.kgXref.geneSymbol), size=5, angle=45, check_overlap = TRUE) +
+  theme(
+    legend.position='none',
+    axis.text=element_text(face="bold"),
+    axis.title=element_text(face="bold"),
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.line.y = element_blank(),
+    #panel.border = element_rect(colour = "black", fill=NA, size=2),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(angle = 45, face="bold", color="black", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15))
+    # plot.title=element_text(face="bold"),
+    # plot.
+    # axis.text=element_text(face="bold", color = "black"),
+    # axis.title=element_text(face="bold"),
+    # axis.text.x = element_text(angle = 45, face = "bold", size=15))
+
+drop.table <- rbind(drop.table, data.table(chr=c,
+                                           start=st,
+                                           end=ed))
+
+
+EUR_AFR.overlap_calls <- anti_join(EUR_AFR.overlap_calls, drop.table, by=c('chr','start','end'))
+  
+```
+
+```{r Identify inds who carry Neand segment and those that do not and write to files}
+#coords <- t(c(c, st, ed, , ))
+#coord.table <- rbind(coord.table, t(c(c, st, ed, st-10000, st)))
+
+c(c, st, ed)
+
+{
+coords <- paste(c, st, ed, 
+                st-10000, st,
+                sep = ' ')
+  
+coords <- paste(c, st, ed, 
+                ed, ed+10000,
+                sep = ' ')
+}
+
+write.table(coords, file='~/DATALab/NeanderthalSeq/IBDmix/FSTtest/test.coord', quote=FALSE, sep=' ', row.names = FALSE, col.names = FALSE, append = TRUE)
+
+# Remove Site
+EUR_AFR.overlap_calls <- anti_join(EUR_AFR.overlap_calls, drop.table, by=c('chr','start','end'))
+
+######################
+# AFR_N <- calls[chr==c & start %in% seq(st+500000,ed-500000,by = 1) & end %in% seq(st+500000,ed-500000,by = 1) & anc=='AFR']$ID %>% unique() %>% 
+#       as.data.table()
+# 
+# EUR_N <- calls[chr==c & start %in% seq(st+500000,ed-500000,by = 1) & end %in% seq(st+500000,ed-500000,by = 1) & anc=='EUR']$ID %>% unique() %>% 
+#       as.data.table()
+# 
+# 
+# AFR_0 <- calls[anc=='AFR']$ID %>% unique() %>% 
+#       as.data.table() %>%
+#       anti_join(y = AFR_N)
+# 
+# EUR_0 <- calls[anc=='EUR']$ID %>% unique() %>% 
+#       as.data.table() %>%
+#       anti_join(y = EUR_N)
+# 
+# 
+# write.table(AFR_N, file="~/DATALab/NeanderthalSeq/IBDmix/FSTtest/AFR_N.inds",quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+# write.table(EUR_N, file="~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_N.inds",quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+# 
+# write.table(AFR_0, file="~/DATALab/NeanderthalSeq/IBDmix/FSTtest/AFR_0.inds",quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+# write.table(EUR_0, file="~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_0.inds",quote = FALSE, sep = "\t", row.names = FALSE, col.names = FALSE)
+# 
+# c(c, st+500000, ed-500000)
+
+
+
+
+
+
+#vcf.name <- paste0('/Genomics/grid/users/limingli/data/1kg-phase3/ALL.chr',c,'.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz')
+#vcf <- readVCF(filename = vcf.name, tid = c, frompos = st, topos = ed)
+
+```
+
+
+```{r Plot difference in fst of edge windows for carriries v. non-carriries}
+AFR_0.EUR_0 <- fread('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/05_02_2019/AFR_0.EUR_0.results', col.names = c('chr','start','end','winstart','winend','fst_AFR_0_EUR_0'))
+
+AFR_N.EUR_N <- fread('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/05_02_2019/AFR_N.EUR_N.results', col.names = c('chr','start','end','winstart','winend','fst_AFR_N_EUR_N'))
+
+AFR_0.EUR_0.perm <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/FSTtest/AFR_0.EUR_0.results.perm.*', col.names = c('chr','start','end','winstart','winend','fst_AFR_0_EUR_0'))
+
+AFR_N.EUR_N.perm <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/FSTtest/AFR_N.EUR_N.results.perm.*', col.names = c('chr','start','end','winstart','winend','fst_AFR_N_EUR_N'))
+
+
+AFR_0.EUR_0.null <- fread('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/test/null/AFR_0.EUR_0.results.null', col.names = c('chr','start','end','winstart','winend','fst_AFR_0_EUR_0'))
+
+AFR_N.EUR_N.null <- fread('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/test/null/AFR_N.EUR_N.results.null', col.names = c('chr','start','end','winstart','winend','fst_AFR_N_EUR_N'))
+
+
+
+
+
+AE.0 <- AFR_0.EUR_0
+AE.N <- AFR_N.EUR_N
+
+AFR.EUR.fst <- left_join(x = AE.N,y = AE.0, by = c('chr','start','end','winstart','winend')) %>%
+                mutate(`fst_0:fst_N`=(fst_AFR_0_EUR_0/fst_AFR_N_EUR_N)) %>%
+                mutate(fst_diff = fst_AFR_0_EUR_0-fst_AFR_N_EUR_N) %>%
+                filter(!is.na(`fst_0:fst_N`))
+
+b <- ggplot() + 
+  theme_classic() +
+  geom_bar(data = data.table(c('fst_0:fst_N < 1', 'fst_0:fst_N > 1'),
+                              c(AFR.EUR.fst %>% filter(`fst_0:fst_N` < 1) %>% nrow()/nrow(AFR.EUR.fst),
+                                AFR.EUR.fst %>% filter(`fst_0:fst_N` > 1) %>% nrow()/nrow(AFR.EUR.fst))
+                             ) %>% setnames(c('category','proportion')),
+           aes(x=category, y=proportion, fill=category), stat="identity", width=0.5) +
+  scale_x_discrete(limits=c('fst_0:fst_N < 1', 'fst_0:fst_N > 1')) +
+  scale_y_continuous(breaks = seq(0,1,0.2), labels= seq(0,1,0.2)) +
+  coord_cartesian(ylim=c(0.04,1), expand = TRUE) +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  theme(
+        legend.position = "none",
+        panel.grid=element_blank(),
+        axis.line.x=element_line(color="black", size=2),
+        axis.line.y=element_line(color="black",size=2),
+        plot.title=element_text(face="bold", size=12),
+        axis.text=element_text(face="bold", size=12, colour = "black"),
+        axis.title=element_text(face="bold", size=12))
+
+
+d <- ggplot() +
+  theme_classic() +
+  geom_density(data=AFR.EUR.fst, aes(x=fst_AFR_0_EUR_0-fst_AFR_N_EUR_N), fill="blue", alpha=0.7 ) +
+  scale_x_continuous(breaks=seq(-1,1,0.1)) +
+  geom_vline(xintercept = 0, size=1) +
+  geom_hline(yintercept = 0, size=2) +
+  coord_cartesian(xlim=c(-1,1),expand = FALSE) +
+  theme(
+    axis.line = element_blank(),
+    axis.text = element_text(face = "bold", color="black", size="12"),
+    axis.title = element_text(face="bold", size="12")
+  )
+
+
+
+
+ggplot() +
+  theme_classic() +
+  stat_ecdf(data= left_join(x = AFR_0.EUR_0, y = AFR_N.EUR_N, by = c('chr','start','end','winstart','winend')), aes(x=fst_AFR_0_EUR_0-fst_AFR_N_EUR_N, color="10kb_dist"), size=3) +
+  stat_ecdf(data= left_join(x = AFR_0.EUR_0.perm, y = AFR_N.EUR_N.perm, by = c('chr','start','end','winstart','winend')), aes(x=fst_AFR_0_EUR_0-fst_AFR_N_EUR_N, color="permuted"), size=3) +
+#  stat_ecdf(data= left_join(x = AFR_0.EUR_0.null, y = AFR_N.EUR_N.null, by = c('chr','start','end','winstart','winend')), aes(x=fst_AFR_0_EUR_0-fst_AFR_N_EUR_N, color="50kb_dist"), size=3) +
+  scale_x_continuous(breaks=seq(-1,1,0.1)) +
+  scale_y_continuous(breaks=seq(0,1,0.1)) +
+#  geom_vline(xintercept = 0, size=1) +
+#  geom_hline(yintercept = 0, size=2) +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  coord_cartesian(xlim=c(-0.4,0.4),expand = TRUE) +
+  theme(
+    panel.grid.major=element_line(color="grey", size = 0.5, linetype = "dashed"),
+    axis.text = element_text(face = "bold", color="black", size=12),
+    axis.title = element_text(face="bold", size=12),
+    legend.text = element_text(size=15, face="bold"),
+    legend.title = element_blank()
+  )
+
+
+ggplot() + 
+  theme_classic() +
+  geom_bar(data = data.table(c('fst_0:fst_N < 1', 'fst_0:fst_N > 1','fst_0:fst_N < 1', 'fst_0:fst_N > 1'),
+                              c("empirical", "empirical","permutation", "permutation"),
+                              c(AFR.EUR.fst %>% filter(`fst_0:fst_N` < 1) %>% nrow()/nrow(AFR.EUR.fst),
+                              AFR.EUR.fst %>% filter(`fst_0:fst_N` > 1) %>% nrow()/nrow(AFR.EUR.fst),
+                              AFR.EUR.fst.perm %>% filter(`fst_0:fst_N` < 1) %>% nrow()/nrow(AFR.EUR.fst.perm),
+                              AFR.EUR.fst.perm %>% filter(`fst_0:fst_N` > 1) %>% nrow()/nrow(AFR.EUR.fst.perm))
+                             ) %>% setnames(c('category','result','proportion')),
+           aes(x=category, y=proportion, fill=result), stat="identity", width=0.5, position = position_dodge()) +
+  # geom_bar(data = data.table(c('fst_0:fst_N < 1', 'fst_0:fst_N > 1'),
+  #                            c("permutation", "permutation"),
+  #                           c(AFR.EUR.fst.perm %>% filter(`fst_0:fst_N` < 1) %>% nrow()/nrow(AFR.EUR.fst.perm),
+  #                             AFR.EUR.fst.perm %>% filter(`fst_0:fst_N` > 1) %>% nrow()/nrow(AFR.EUR.fst.perm))
+  #                          ) %>% setnames(c('category','result','proportion')),
+  #        aes(x=category, y=proportion, fill=result), stat="identity", width=0.5, position = position_dodge()) +
+  scale_x_discrete(limits=c('fst_0:fst_N < 1', 'fst_0:fst_N > 1')) +
+  scale_y_continuous(breaks = seq(0,1,0.2), labels= seq(0,1,0.2)) +
+  coord_cartesian(ylim=c(0.04,1), expand = TRUE) +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  theme(
+        #legend.position = "none",
+        panel.grid=element_blank(),
+        axis.line.x=element_line(color="black", size=2),
+        axis.line.y=element_line(color="black",size=2),
+        plot.title=element_text(face="bold", size=12),
+        axis.text=element_text(face="bold", size=12, colour = "black"),
+        axis.title=element_text(face="bold", size=12))
+
+grid.arrange(b,d, layout_matrix=cbind(c(1),c(2)))
+
+#grid.arrange(b,d,z1,z2, layout_matrix=rbind(c(1,2),c(3),c(4)))
+
+
+
+grid.arrange(z1,z2,z3,z4,z5,z6,z7,z8,z9,z10,z11,z12,ncol=6)
+
+#noquote(paste(c(ls(pattern = "z")), collapse = ","))
+
+```
+
+
+```{r Finad alleles that tag Neand haplotype in EUR}
+
+EUR_N.freq <- fread('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_N.frq', col.names = c('chr','pos','n_alleles','n_chr','N_allele_1','N_allele_2'))
+
+EUR_0.freq <- fread('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_0.frq', col.names = c('chr','pos','n_alleles','n_chr','0_allele_1','0_allele_2'))
+
+EUR_N.EUR_0.freq <- left_join(x=EUR_N.freq, y = EUR_0.freq, by=c('chr','pos')) %>% select(-c(n_alleles.y,n_chr.y,n_chr.x)) %>%
+                    separate(N_allele_1, c('N_allele_1','N_freq_1'),':') %>%
+                    separate(N_allele_2, c('N_allele_2','N_freq_2'),':') %>% 
+                    separate(`0_allele_1`, c('0_allele_1','0_freq_1'),':') %>% 
+                    separate(`0_allele_2`, c('0_allele_2','0_freq_2'),':') %>%
+                    mutate(N_freq_1=as.numeric(N_freq_1), N_freq_2=as.numeric(N_freq_2)) %>%
+                    mutate(`0_freq_1`=as.numeric(`0_freq_1`), `0_freq_2`=as.numeric(`0_freq_2`)) %>%
+                    #mutate(N_allele_diff = abs(N_freq_1 - N_freq_2), `0_allele_diff` = abs(`0_freq_1` - `0_freq_2`)) %>%
+                    #select(c(chr,pos,N_freq_1,N_freq_2,`0_freq_1`,`0_freq_2`,N_allele_diff,`0_allele_diff`)) %>%
+                    as.data.table()
+
+
+EUR_N.EUR_0.freq %>% filter(N_freq_1 > `0_freq_1` & N_freq_1!=1 & `0_freq_1` < 0.6)
+
+EUR_N.EUR_0.freq %>% filter(N_freq_1 > `0_freq_1` & N_freq_1!=1 & `0_freq_1` < 0.6) %>% 
+                    select(chr, pos) %>% 
+                    write.table(file = '~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_N_specific_sites', sep = '\t', quote = FALSE,row.names = FALSE, col.names = FALSE)
+
+```
+
+
+```{r Test whether permuted data has more >1 ratio than the empirical data}
+p <- 0
+fst_diff_p <- c()
+fst_ratio_p <- c()
+
+for(i in seq(1,100,by=1)){
+  
+  print(i)
+  perm_0.i <- paste0('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_AFR/10kb_permuted/AFR_0.EUR_0.results.perm.',i)
+  perm_N.i <- paste0('~/DATALab/NeanderthalSeq/IBDmix/FSTtest/EUR_AFR/10kb_permuted/AFR_N.EUR_N.results.perm.',i)
+
+  AFR_0.EUR_0.perm <- fread(paste0('cat ', perm_0.i), col.names = c('chr','start','end','winstart','winend','fst_AFR_0_EUR_0'))
+  
+  AFR_N.EUR_N.perm <- fread(paste0('cat ', perm_N.i), col.names = c('chr','start','end','winstart','winend','fst_AFR_N_EUR_N'))
+
+  AFR.EUR.fst.perm <- left_join(x = AFR_N.EUR_N.perm,y = AFR_0.EUR_0.perm, by = c('chr','start','end','winstart','winend')) %>%
+                  mutate(`fst_0:fst_N`=(fst_AFR_0_EUR_0/fst_AFR_N_EUR_N)) %>%
+                  mutate(fst_diff = fst_AFR_0_EUR_0-fst_AFR_N_EUR_N)
+  
+  print(AFR.EUR.fst.perm %>% filter(`fst_0:fst_N`>1) %>% nrow())
+  
+  if( (AFR.EUR.fst.perm %>% filter(`fst_0:fst_N`>1) %>% nrow()) >= (AFR.EUR.fst %>% filter(`fst_0:fst_N`>1) %>% nrow()) ){
+    p <- 1+p
+  }
+
+  fst_diff_p <- c(fst_diff_p, wilcox.test(x = AFR.EUR.fst$fst_diff, AFR.EUR.fst.perm$fst_diff)$p.value)
+  fst_ratio_p <- c(fst_ratio_p, wilcox.test(x = AFR.EUR.fst$`fst_0:fst_N`, AFR.EUR.fst.perm$`fst_0:fst_N`)$p.value)
+  
+}
+
+
+```
+
+
+
+

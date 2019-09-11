@@ -3,6 +3,8 @@ title: "Untitled"
 author: "Aaron Wolf"
 date: "3/29/2019"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r}
@@ -12,71 +14,214 @@ library(ggplot2)
 library(dplyr)
 library(scales)
 library(RColorBrewer)
+library(reshape2)
+library(ape)
+
+```
+
+```{r IBDmix calls}
+
+Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.LOD4.50K.filterAFRDeni.txt', header=FALSE,
+                                   col.names =c('chr','start','end','score1','score2','length_bp','pop','anc','ID'))
+
+color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+#ancestry.levels <- c('AFR','EUR','EAS','SAS', 'AMR')
+ancestry.levels <- c('AFR','EUR','EAS')
+
+
+calls = Altai.2013.p_SingleArchaic %>% select(ID, chr, start, end, pop, anc) %>%
+        mutate(anc = factor(anc, levels = ancestry.levels)) %>%
+        filter(anc %in% c('AFR','EUR','EAS')) %>%
+        arrange(anc, pop, ID) %>% as.data.table()
+calls[, ID.mod := .GRP, by = 'ID']
+
+```
+
+
+```{r Genotype Data}
+
+col_names <- c('chr','pos','anc_allele','der_allele','Altai',seq(from=1,to = 2504, by = 1))
+
+fname <- paste0('~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/','Altai_1KGP3_chr17_36Mb.txt')
+fname <- paste0('~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/','Altai_1KGP3_chr12_89Mb.txt')
+
+Altai_1kG.derived_recode = fread(fname, select = seq(from=1, to = 2509), fill=TRUE, col.names = col_names) 
+                          #, colClasses = c('numeric','numeric','character','character',rep('numeric',times = 2505))
+  
+popfile <- fread('~/DATALab/NeanderthalSeq/IBDmix/1KGP.P3.SampleInfo.txt', 
+                 col.names = c('vcf_ID','1kG_ID','Pop','anc','Pop_num','Gender','X_ID'), 
+                 colClasses = c(rep('character',7))) %>%
+            rbind(list('Altai',NA,'Altai','Neand',NA,NA,NA)) %>%
+            filter(!Pop %in% c('ACB','ASW')) %>% as.data.table()
+
+#color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+
+
+# Define ancestry levels and order
+#ancestry.levels <- c('Neand','AFR','EUR','EAS','SAS','AMR')
+ancestry.levels <- c('Neand','AFR','EUR','EAS')
+#ancestry.levels <- c('Neand','AFR','EUR')
+
+
+# sample 1kG data
+c <- 12
+st <- 89157220
+ed <- 89259766
+
+Altai_1kG_sample <- Altai_1kG.derived_recode %>% filter(pos > st-10000 & pos < ed+10000)
+
+dt.carrier <- filter(popfile, `1kG_ID` %in% filter(calls, chr==c, start>=st, end<=ed)$ID) %>% mutate(carrier=1)
+
+##########
+# #Calculate 'Genetic Score' for each sample and order based on genetic distance to Altai
+# dt.derived_score <- Altai_1kG_sample %>% 
+#                     summarise_at(.vars = seq(5,ncol(Altai_1kG_sample),1),.funs = sum, na.rm=TRUE)
+# 
+# dt.derived_dist_Altai <- dt.derived_score %>% 
+#                         mutate_all(.funs = function(x){abs(dt.derived_score$Altai - x)}) %>%
+#                         t() %>% 
+#                         as.data.table(keep.rownames = 'id') %>% 
+#                         arrange(desc(V1)) %>% 
+#                         as.data.table(keep.rownames = TRUE) %>% setnames(c('rank_num','vcf_ID','derived_dist_Altai'))
+############
+##############
+# Calculate Genetic distance between samples, and create ranking order for clustering
+Altai_1kG_derived_recode.transposed <- Altai_1kG_sample %>% 
+                                      select(-c('chr','pos','anc_allele','der_allele')) %>%
+                                      t() %>% as.data.table(keep.rownames = 'vcf_ID') %>% setnames(c('vcf_ID',Altai_1kG_sample$pos)) %>%
+                                      left_join(select(popfile,c('vcf_ID','anc')),by=c('vcf_ID')) %>%
+                                      left_join(select(dt.carrier,c('vcf_ID','carrier')), by=c('vcf_ID')) %>% mutate(carrier=ifelse(is.na(carrier),0,1)) %>%
+                                      filter(anc %in% c('Neand','AFR','EUR','EAS')) %>%
+                                      #select(-c('anc','carrier'))
+                                      select(vcf_ID,anc,carrier,everything()) %>%
+                                      as.data.table()
+
+Altai_1kG_derived_recode.transposed.vcf_carrier <- Altai_1kG_derived_recode.transposed %>% 
+                                                  select(vcf_ID,carrier) %>%
+                                                  as.data.frame(row.names = Altai_1kG_derived_recode.transposed$vcf_ID) %>%
+                                                  select(-vcf_ID)
+
+Altai_1kG_derived_recode.transposed.vcf_carrier <- Altai_1kG_derived_recode.transposed %>% 
+                                                  select(vcf_ID,carrier)
+
+write.table(x = Altai_1kG_derived_recode.transposed, 
+            file = '~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/Altai_1KGP3_chr12_89Mb.geno', 
+            quote = FALSE, sep = '\t',row.names = FALSE, col.names = TRUE)
+
+Altai_1kG_derived_recode.transposed <- Altai_1kG_derived_recode.transposed %>% as.data.frame(row.names = Altai_1kG_derived_recode.transposed$vcf_ID) %>% select(-vcf_ID)
+
+
+dt.dist <- dist.gene(x = Altai_1kG_derived_recode.transposed, method = "pairwise")
+
+#Select sites just in downstream 10kb window
+which(as.numeric(names(Altai_1kG_derived_recode.transposed))<st)    # which sites lie in the downstream 10kb window
+which(as.numeric(names(Altai_1kG_derived_recode.transposed))>ed)    # which sites lie in the downstream 10kb window
+dt.dist.10kb <- dist.gene(x = select(Altai_1kG_derived_recode.transposed,1:295), method = "pairwise")  #select just these sites to calculate distance matrix
+
+
+# hierarchical clustering
+hc <- hclust(dt.dist.10kb)
+plot(hc)
+clust.ID_list <- cutree(hc,k=6) %>% as.data.table(keep.rownames = TRUE) %>% setnames(c('vcf_ID','class')) %>% filter(class==1) %>% select(vcf_ID)
+filter(clust.ID_list, vcf_ID %in% filter(popfile, `1kG_ID` %in% filter(calls, chr==c, start>=st, end<=ed)$ID)$vcf_ID)
+
+# neighbor joinging
+nbjn <- nj(dt.dist) %>% ladderize()
+plot(nbjn)
+
+# Principal coordinate analysis
+res <- pcoa(dt.dist)
+res <- pcoa(dt.dist.10kb)
+#res$values
+dt.res <- as.data.table(res$vectors, keep.rownames = "vcf_ID") %>% left_join(select(Altai_1kG_derived_recode.transposed, c(vcf_ID,anc,carrier)),by="vcf_ID")
+ggplot() + geom_point(data=dt.res, aes(x=Axis.1, y=Axis.2, color=as.factor(carrier), shape=as.factor(anc)),fill=NA, size=3) + 
+          #  geom_text(data=dt.res, aes(x=Axis.3, y=Axis.10, label=ifelse(vcf_ID=='Altai',vcf_ID,''))) +
+            theme()
+
+
+
+#v <- hc$order
+v <- hc$order -1
+v <- replace(v, v==0, 'Altai')
+dt.derived_dist_Altai <- as.data.table(v,keep.rownames = TRUE) %>% cbind(seq(1,length(v),1)) %>% setnames(c('vcf_ID','rank_num'))
+#dt.derived_dist_Altai <- as.data.table(v,keep.rownames = TRUE) %>% cbind(seq(1,length(v),1)) %>% setnames(c('vcf_ID','rank_num'))
+
+
+##############
+
+
+# Melt Genotype data, add ancestry levels, add ranking order for clustering
+Altai_1kG.derived_recode.melt <- Altai_1kG_sample %>% 
+                                  select(-c('anc_allele','der_allele')) %>% 
+                                  reshape2::melt(id = c('chr','pos')) %>% 
+                                  setnames(c('chr','pos','vcf_ID','genotype')) %>% mutate(vcf_ID=as.character(vcf_ID), genotype=as.character(genotype)) %>%
+                                  left_join(select(popfile,c('vcf_ID','anc')),by=c('vcf_ID')) %>%
+                                  left_join(dt.derived_dist_Altai, by=c('vcf_ID'))
+ 
+
+calls = Altai_1kG.derived_recode.melt %>%
+        filter(anc %in% c(ancestry.levels)) %>%
+        filter(genotype!=0) %>%
+#        nrow()
+        as.data.table()
+
+
+
+#calls[, vcf_ID.mod := .GRP, by = c('genotype', 'vcf_ID')]
+
+
+```
+
+
+```{r}
+
+color.values <- c( '0' = 'blue', '1' = 'purple', '2' = 'red')
+
+#calls$anc_f <- factor(calls$anc, levels = c('Neand','EAS','EUR','AFR'))
+calls$anc_f <- factor(calls$anc, levels = c('Neand','EUR','AFR'))
+#calls$anc_f <- factor(calls$anc, levels = c('Neand','EAS'))
+
+  ggplot() + theme_bw() +
+  #geom_raster(data=Altai_1kG.derived_recode.melt, aes(x = as.character(pos), y=rank, fill=genotype)) + 
+  geom_raster(data=calls, aes(x = as.character(pos), y=rank_num, fill=genotype)) +
+  scale_fill_manual(values=color.values) + 
+  scale_x_discrete(labels=NULL) +
+  facet_wrap(~anc_f, scales = "free_y", strip.position = "left",ncol=1) +
+  xlab(paste0('chr',calls$chr,' : ',min(calls$pos),'-',max(calls$pos))) +
+  geom_vline(xintercept = 36230365) + geom_vline(xintercept = 36240365) +
+  #coord_cartesian(xlim=c(120190000,120290000)) +
+  theme(
+    #legend.position='none',
+    panel.grid=element_blank(),
+    axis.ticks.y=element_blank(),
+    panel.border = element_blank(),
+    #panel.border = element_rect(colour = "black", fill=NA, size=2),
+    axis.line.y = element_blank(),
+    plot.title=element_text(face="bold", size=20),
+    axis.text.x=element_text(face="bold", size=15),
+    axis.text.y=element_blank(),
+    axis.title.x=element_text(face="bold", size=15),
+    axis.title.y=element_text(face="bold", size=15),
+    panel.background = element_rect(fill = "lightblue"))
+
 
 ```
 
 
 
-```{r Derived Allele Converion}
 
-chr_num <- 18
-seg_num <- 9
-AAfile <- read.table(file=paste("seg", seg_num, ".chr", chr_num, ".AA.txt", sep=""), header=F, sep="\t",stringsAsFactors = F,col.names = c("chr","pos","ref","alt","AncestralAllele"))
 
-A.Allele <- as.character(sapply(1:nrow(AAfile), function(x){
-  A.Allele <-unlist(strsplit(AAfile$AncestralAllele[x],""))[1] 
-  return(A.Allele)
-}))
-AAfile <- cbind(AAfile, A.Allele)
-genoprev <- read.table(file=paste("seg", seg_num, ".chr", chr_num, ".genoprev", sep=""), header=F, sep="\t", stringsAsFactors = F, col.names=c("chr", "pos", "ref","alt","altai","ind"))
-toreplace <- which(genoprev$pos %in% AAfile$pos)
+```{r}
 
-recoded.geno <- as.data.frame(t(sapply(toreplace, function(x){
-  oldline <- unlist(genoprev[x,])
-  newline <- oldline
-  A.Allele <- AAfile[AAfile$pos==oldline["pos"],"A.Allele"]
-  #AncestralAllele <- unlist(strsplit(as.character(Ancinfo.30peak[Ancinfo.30peak$pos==oldline[["pos"]],"AncestralAllele"]),""))[1]
-  if(A.Allele==oldline["ref"]) {
-    return(newline)
-  } else if(A.Allele==oldline["alt"]) {
-    if(length(which(oldline==0))!=0) {
-      newline[which(oldline==0)] <- 2
-    } 
-    if(length(which(oldline==2))!=0) {
-      newline[which(oldline==2)] <- 0
-    }
-    return(newline)
-  }
-  else {
-    outlier<-rep(NA,6)
-    names(outlier)<-c("chr","pos","ref","alt","altai","ind")
-    return(outlier)
-  }
-})))
-
-recoded.geno <- na.omit(recoded.geno)
-recoded.geno$altai <- as.numeric(levels(recoded.geno$altai))[recoded.geno$altai]
-recoded.geno$ind <- as.numeric(levels(recoded.geno$ind))[recoded.geno$ind]
-recoded.geno$pos <- as.numeric(levels(recoded.geno$pos))[recoded.geno$pos]
-recoded.geno$chr <- as.numeric(levels(recoded.geno$chr))[recoded.geno$chr]
-#recoded.geno$ref <- as.numeric(levels(recoded.geno$ref))[recoded.geno$ref]
-#recoded.geno$alt <- as.numeric(levels(recoded.geno$alt))[recoded.geno$alt]
+# # Calculate Genetic distance between samples, and create ranking order for clustering
+# Altai_1kG_derived_recode.transposed <- Altai_1kG_sample %>% 
+#                                       select(-c('chr','pos','anc_allele','der_allele')) %>%
+#                                       t()  
+# dt.dist <- dist.gene(x = Altai_1kG_derived_recode.transposed, method = "pairwise")
+# hc <- hclust(dt.dist)
+# v <- hc$order -1
+# v <- replace(v, v==0, 'Altai')
+# rank.table <- as.data.table(v,keep.rownames = TRUE) %>% cbind(seq(1,length(v),1)) %>% setnames(c('vcf_ID','rank'))
 
 ```
-
-
-
-```{r Genotype Visualization}
-
-colorvec <- c("white", "green4", "blue2")
-plot(NA, xlim=c(45735596,45819148), ylim=c(0,3), xlab="", ylab="")
-title("prop5_count20_chr18_20_40")
-invisible(sapply(1:nrow(recoded.geno), function(x) { points(rep(recoded.geno[x,2],2),1:2, col=colorvec[unlist(recoded.geno[x,5:6])+1], pch=15, cex=2) }))
-
-
-
-```
-
-
-
 

@@ -1,0 +1,132 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "9/9/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r}
+Prop_blw_thrhld.fn <- function(callset, sample_size, min_window, quer_prop){
+  dt.prop_blw_thrhld <- data.table()
+#  for(winsize in seq(from=1, to = 15, by = 1)){
+  pct_int_thrhld <- 0.00035
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+    dir <- '~/DATALab/NeanderthalSeq/Sstar_2015/desert_test/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases_',quer_prop)
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chr','strt','end','quer','intr_bp')) %>%
+                                  filter(!(chr %in% c('chrY','chrX','chrM'))) %>% filter(quer/(end-strt)>=quer_prop)
+    
+    #percentile_99_file <- paste0(dir,'/',callset,'/99_percentile.avg_pct_int_',quer_prop)
+    # pct_int_thrhld <- fread(input = percentile_99_file, col.names = c('window','99_percentile'), colClasses = c('numeric','numeric')) %>%
+    #                   filter(window==winsize) %>%
+    #                   select(2) %>% as.numeric()
+    
+    # pct_int_tbl <- windows.introgressed_bases %>% mutate(pct_int = intr_bp/quer/sample_size)
+    # pct_int_thrhld <- pct_int_tbl$pct_int %>% quantile(probs=c(0.01)) %>% as.numeric()
+    
+    print(paste(winsize, pct_int_thrhld,sep=' '))
+    
+    n_quer <- nrow(windows.introgressed_bases)
+    n_blw_thrhld <- windows.introgressed_bases %>%
+                    mutate(pct_int=(intr_bp)/(quer)/(sample_size)) %>%
+                    filter(pct_int<=pct_int_thrhld) %>%
+                    nrow()
+    prop_blw_thrhld <- n_blw_thrhld/n_quer
+    
+    dt.prop_blw_thrhld <- rbind(dt.prop_blw_thrhld, data.table(winsize,n_quer,n_blw_thrhld,prop_blw_thrhld))
+  }
+  return(dt.prop_blw_thrhld)
+}
+
+
+bootstrap.fn <- function(callset, sample_size, min_window, quer_prop){
+  dt.bootstrap.prop_blw_thrhld <- data.table()
+  pct_int_thrhld <- 0.00035
+  for(winsize in seq(from=min_window, to = 15, by = 1)){
+    dir <- '~/DATALab/NeanderthalSeq/Sstar_2015/desert_test/'
+    callset <- callset #'callset_ALL.neand_ambig'
+    sample_size <- sample_size #3046
+    winsize <- winsize
+    
+    
+    infile <- paste0(dir,'/',callset,'/', 'windows.',winsize,'MB.100kb.bed.introgressed_bases_',quer_prop)
+    
+    windows.introgressed_bases <- fread(input = infile,
+                                        header=FALSE,
+                                        col.names = c('chr','strt','end','quer','intr_bp')) %>%
+                                  filter(!(chr %in% c('chrY','chrX','chrM')))
+    
+    
+    bs.windows.introgressed_bases <- sample_n(tbl = windows.introgressed_bases, size = nrow(windows.introgressed_bases), replace = TRUE)
+    #bs.windows.introgressed_bases <- sample_n(tbl = windows.introgressed_bases, size = 50, replace = TRUE)
+    
+    bs.windows.introgressed_bases <- bs.windows.introgressed_bases %>% filter(quer/(end-strt)>=quer_prop)
+    
+    # percentile_99_file <- paste0(dir,'/',callset,'/99_percentile.avg_pct_int_',quer_prop)
+    # pct_int_thrhld <- fread(input = percentile_99_file, col.names = c('window','99_percentile'), colClasses = c('numeric','numeric')) %>% 
+    #                   filter(window==winsize) %>% 
+    #                   select(2) %>% as.numeric()
+    
+
+    n_quer <- nrow(bs.windows.introgressed_bases)
+    n_blw_thrhld <- bs.windows.introgressed_bases %>%
+                    mutate(pct_int=(intr_bp)/(quer)/(sample_size)) %>%
+                    filter(pct_int<pct_int_thrhld) %>%
+                    nrow()
+    
+    prop_blw_thrhld <- n_blw_thrhld/n_quer
+    
+    dt.bootstrap.prop_blw_thrhld <- rbind(dt.bootstrap.prop_blw_thrhld, data.table(winsize,n_quer,n_blw_thrhld,prop_blw_thrhld))
+  }
+  return(dt.bootstrap.prop_blw_thrhld)
+}
+
+
+CI.95.fn <- function(reps, callset, sample_size, min_window, quer_prop){
+  dt.CI.95 <- data.table()
+  count <- 1
+  while(count<=reps){
+  #dt.bs <- bootstrap.fn(callset = 'callset_ALL.neand_ambig', sample_size = 2992+56)
+  dt.bs <- bootstrap.fn(callset = callset, sample_size = sample_size, min_window = min_window, quer_prop)
+  dt.CI.95 <- rbind(dt.CI.95, dt.bs)
+  count <- count+1
+  }
+  return(dt.CI.95)
+}
+```
+
+```{r}
+
+Sstar.prop_blw_thrhld <- fread('~/AKEYLab/NeanderthalSeq/bin/Count_windows_blw_thrhld_EUREAS.txt', col.names = c('winsize', 'n_quer', 'n_blw_thrhld','prop_blw_thrhld'))
+Sstar.prop_blw_thrhld.CI <- fread('~/AKEYLab/NeanderthalSeq/bin/Vernot_Sci2016_windows_cutoff316_prop_blw_thrhld_95CI_EUREAS.txt')
+
+
+# Calculate the proportion of queryable windows w/ cM~1 that are bewlo the pct_int_thrhld
+Sstar.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'EUR_EAS_SAS', sample_size = (1523*2) , min_window = 5, quer_prop = 0.9)
+
+```
+
+
+```{r}
+
+Sstar.Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 1000, callset = 'EUR_EAS', sample_size =(1523*2), min_window = 5, quer_prop = 0.9)
+
+Sstar.CI <- data.table()
+for( i in seq(from=1, to=15, by=1)){
+  ci <- Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld %>% quantile(probs=c(0.025, 0.975), na.rm=TRUE)
+  #ci <- t.test(Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld)$conf.int[1:2]
+  CI <- rbind(CI, data.table(winsize=i, lower=ci[1], upper=ci[2]))
+}
+Sstar.CI <- replace_na(CI,list(lower=0, upper=0))
+
+
+```

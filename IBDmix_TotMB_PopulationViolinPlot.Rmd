@@ -15,15 +15,19 @@ library(bit64)
 ```
 
 ```{r}
-IBDmixCalls <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt', header=TRUE)
+IBDmixCalls <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.LOD4.50K.filterAFRDeni.txt', header=FALSE,
+                                   col.names =c('chr','start','end','score1','score2','length_bp','pop','anc','ID') )
 
-IBDmixCalls <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt          ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.SAN.originalmerge.LOD4.30K.txt', header=TRUE)
-
+#IBDmixCalls <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.LOD4.50K.filterAFRDeni.txt          ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.SAN.originalmerge.LOD4.30K.txt', header=FALSE,
+#                                  col.names =c('chr','start','end','score1','score2','length_bp','pop','anc','ID') )
 #callable_bases.IBDmix <- fread('~/DATALab/NeanderthalSeq/IBDmix/include_regions/chrALL.include', header=TRUE) %>%
 #                          mutate(length=as.numeric(chromEnd-chromStart))
 
 setwd('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/')
-IBDmixcalls.masked <- fread(' bedmap --ec --delim "\t" --echo --indicator ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged ', col.names = c('chr','start','end','ID','pop','anc','indicator')) %>%
+IBDmixcalls.masked <- fread('bedmap --ec --delim "\t" --echo --indicator ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed.merged ', col.names = c('chr','start','end','ID','pop','anc','indicator')) %>%
+                              filter(indicator==0)
+
+IBDmixcalls.masked_100kb <- fread('cat ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/YRIcalls.bed | awk \'BEGIN {OFS="\t"} {if(($3-$2) > 100000) print$0}\' | bedops --merge - | bedmap --ec --delim "\t" --echo --indicator ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAScalls.bed - ', col.names = c('chr','start','end','ID','pop','anc','indicator')) %>%
                               filter(indicator==0)
 
 ##########################
@@ -55,7 +59,9 @@ dt.Sstar$anc <- factor(dt.Sstar$pop, levels = c('EAS','EUR','SAS','PNG'))
 
 dt.IBDmix <-
   #IBDmixcalls.masked %>%
+  #IBDmixcalls.masked_100kb %>%
   IBDmixCalls %>%
+  #filter( (end-start)>=100000) %>%
   #filter(anc %in% c('EUR','EAS', 'AFR')) %>%
   group_by(ID,pop,anc) %>%
   summarise(sum_MB=sum(end-start)/1000000) %>%
@@ -68,10 +74,10 @@ v <- dt.IBDmix %>% group_by(anc,pop) %>% summarise(pop_mean=mean(sum_MB)) %>% as
 ```
 
 ```{r}
-color.values <- c('EUR' = 'dodgerblue1','EAS'='mediumpurple3','AFR'='red3')
-color.values <- c('EUR'='#d8b365', 'EAS'='#5ab4ac','AFR'='#f768a1')
+#color.values <- c('EUR' = 'dodgerblue1','EAS'='mediumpurple3','AFR'='red3')
+#color.values <- c('EUR'='#d8b365', 'EAS'='#5ab4ac','AFR'='#f768a1')
 color.values <- c( 'EAS'= 'dodgerblue3','EUR'= 'dodgerblue3','SAS'= 'dodgerblue3','AMR'= 'dodgerblue3','AFR'='red3','AFR_AMR'='mediumpurple3')
-afr.color.values <- c('LWK'='#a50f15','GWD'='#cb181d','MSL'='#ef3b2c','YRI'='#fb6a4a','ESN'='#fcbba1')
+#afr.color.values <- c('LWK'='#a50f15','GWD'='#cb181d','MSL'='#ef3b2c','YRI'='#fb6a4a','ESN'='#fcbba1')
 
 #queryable_MB <- sum(callable_bases.IBDmix$length)/1000000
 
@@ -80,41 +86,48 @@ afr.color.values <- c('LWK'='#a50f15','GWD'='#cb181d','MSL'='#ef3b2c','YRI'='#fb
 queryable_MB <- 1
 
 ggplot() + theme_classic() +
-  geom_violin(data=dt.IBDmix[anc %in% c('EUR','EAS', 'AFR')], aes(x=as.factor(anc), y=sum_MB, fill=as.factor(anc)), draw_quantiles = c(0.5), scale = 'width') +
+#  geom_violin(data=dt.IBDmix[anc %in% c('EUR','EAS', 'AFR')], aes(x=as.factor(anc), y=sum_MB, fill=as.factor(anc)), draw_quantiles = c(0.5), scale = 'width') +
   scale_fill_manual(values=color.values) +
 #  scale_x_discrete(breaks=c('EAS','EUR'), limits=c('EAS','EUR')) +
-  scale_x_discrete(breaks=c('EAS','EUR','AFR'), limits=c('EAS','EUR','AFR')) +
-#  scale_x_discrete(breaks=c('EAS','EUR','SAS','AFR','AMR','AFR_AMR'), limits=c('SAS','EAS','EUR','AMR','AFR_AMR','AFR'), labels=c('EAS','EUR','SAS','AFR','AMR','ACB/ASW')) +
-#  geom_violin(data=dt.IBDmix[anc %in% c('EAS','EUR','AFR')], aes(x=as.factor(anc), y=sum_MB, fill=as.factor(anc)), draw_quantiles = c(0.5), scale = 'width') +
-#  scale_x_discrete(breaks=c('EAS','EUR','AFR'), limits=c('AFR','EAS','EUR')) +
+#  scale_x_discrete(breaks=c('EAS','EUR','AFR'), limits=c('EAS','EUR','AFR')) +
+  scale_x_discrete(breaks=c('EAS','EUR','SAS','AFR','AMR','AFR_AMR'), 
+                   limits=c('EAS','SAS','EUR','AMR','AFR_AMR','AFR'), 
+                   labels=c('EAS','EUR','SAS','AFR','AMR','ACB/ASW')) +
 #  geom_violin(data=dt.IBDmix[anc %in% c('EUR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
 #  scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('EUR')]$pop), limits=unique(arrange(dt.IBDmix[anc %in% c('EUR')], desc(sum_MB))$pop)) +
 #  geom_violin(data=dt.IBDmix[anc %in% c('EAS')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
 #  scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('EAS')]$pop), limits=unique(arrange(dt.IBDmix[anc %in% c('EAS')], desc(sum_MB))$pop)) +
-  #geom_violin(data=dt.IBDmix[anc %in% c('AFR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
-  #scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('AFR')]$pop), limits=unique(arrange(v, desc(pop_mean))[anc %in% c('AFR')]$pop)) +
-  #scale_fill_manual(values = afr.color.values) +
-#  geom_violin(data=dt.IBDmix, aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
-#  geom_violin(data=dt.IBDmix, aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  geom_violin(data=dt.IBDmix[anc %in% c('AFR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
+#  scale_x_discrete(breaks=unique(dt.IBDmix[anc %in% c('AFR')]$pop), limits=unique(arrange(v, desc(pop_mean)) %>%
+ #                                                                           filter(anc %in% c('AFR')) %>%
+  #                                                                          select(pop)
+   #                                                                         )$pop) +
+#  scale_fill_manual(values = afr.color.values) +
+  geom_violin(data=dt.IBDmix, aes(x=as.factor(anc), y=sum_MB, fill=as.factor(anc)), draw_quantiles = c(0.5), scale = 'width') +
 #  scale_x_discrete(breaks=unique(dt.IBDmix$pop), limits=arrange(v,(pop_mean))$pop) +
 #  geom_violin(data=dt.IBDmix[anc %in% c('EUR','EAS','AFR')], aes(x=as.factor(pop), y=sum_MB, fill=as.factor(pop)), draw_quantiles = c(0.5), scale = 'width') +
 #  scale_x_discrete(breaks=v[anc %in% c('EUR','EAS','AFR')]$pop, limits=(arrange(v,desc(pop_mean))[anc %in% c('EUR','EAS','AFR')]$pop)) +
 #  scale_x_discrete(breaks=v[anc %in% c('EUR','EAS','AFR')]$pop, limits=(arrange(v,pop_mean)[anc %in% c('EUR','EAS','AFR')]$pop)) +
-  ggtitle('IBDmix With Masking') +
+  ggtitle('IBDmix') +
+#  ggtitle('IBDmix With Masking') + 
  # coord_cartesian(ylim=c(0.0,0.04)) +
 #  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0.0, to = 0.04,by = 0.005)) + 
-  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0, to = 100,by = 10)) +
-  coord_cartesian(ylim=c(0,100)) +
-  ylab('Sequence of Neanderthal Ancestry (Mb)') +
-  xlab('') +
+  scale_y_continuous(breaks=seq(from = 0, to = 80,by = 20)) +
+  coord_cartesian(ylim=c(0,85), xlim=c(0.5,6.5),expand = FALSE) +
+#  coord_cartesian(ylim=c(0,100),xlim=c(0.5,2.5), expand = FALSE) +
+#  scale_y_continuous(breaks=seq(from = 0, to = 30, by = 5)) +
+#  coord_cartesian(ylim=c(8,27),xlim=c(0.5,5.5), expand = FALSE) +
+  ylab('Neanderthal Ancestry (Mb)\n') +
+#   ylab('') +
+   xlab('') +
   theme(
-#    legend.position="none",
+    legend.position="none",
     axis.line.x=element_line(color="black", size=2),
     axis.line.y=element_line(color="black",size=2),
-    panel.grid.major = element_line(colour = "grey60"),
-    plot.title=element_text(face="bold", size = 24),
-    axis.text=element_text(face="bold", size = 20),
-    axis.title=element_text(face="bold", size = 20)
+    #panel.grid.major = element_line(colour = "grey60"),
+    plot.title=element_text(face="bold", size = 40, hjust = 0.5),
+    axis.text=element_text(face="bold", size = 40, colour = "black", family = "Helvetica"),
+    axis.title=element_text(face="bold", size = 40, color="black", family= "Helvetica")
   )
   
 
@@ -160,17 +173,18 @@ ggplot() + theme_classic() +
   ggtitle('S* 2016') +
  # coord_cartesian(ylim=c(0.0,0.04)) +
 #  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0.0, to = 0.04,by = 0.005)) + 
-  scale_y_continuous(expand=c(0,0), breaks=seq(from = 0, to = 100,by = 10)) +
-  coord_cartesian(ylim=c(0,100)) +
+  scale_y_continuous(breaks=seq(from = 0, to = 100,by = 20)) +
+  coord_cartesian(ylim=c(0,100), xlim=c(0.5,2.5), expand = FALSE) +
   ylab('Sequence of Neanderthal Ancestry (Mb)') +
   xlab('') +
   theme(
+    legend.position="none",
     axis.line.x=element_line(color="black", size=2),
     axis.line.y=element_line(color="black",size=2),
-    panel.grid.major = element_line(colour = "grey60"),
-    plot.title=element_text(face="bold", size = 24),
-    axis.text=element_text(face="bold", size = 20),
-    axis.title=element_text(face="bold", size = 20)
+    #panel.grid.major = element_line(colour = "grey60"),
+    plot.title=element_text(face="bold", size = 40, hjust = 0.5),
+    axis.text=element_text(face="bold", size = 40, colour = "black", family = "Helvetica"),
+    axis.title=element_text(face="bold", size = 40, color="black", family= "Helvetica")
   )
 
 dt.kw <- kruskal.test(sum_MB ~ anc, data=dt.Sstar)

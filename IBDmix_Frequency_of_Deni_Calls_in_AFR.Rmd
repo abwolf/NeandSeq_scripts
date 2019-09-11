@@ -1,0 +1,215 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "4/24/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+```
+
+
+
+```{r 50kb Segment Length}
+######################
+######################
+# 50kb Segment length filter
+
+LWK.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/LWK.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/LWK.Deni.50kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+YRI.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/YRI.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/YRI.Deni.50kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+MSL.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/MSL.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/MSL.Deni.50kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+GWD.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/GWD.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/GWD.Deni.50kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+ESN.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/ESN.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/ESN.Deni.50kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+allAFR.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFR.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFR.Deni.50kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+#######
+```
+
+```{r 60kb Segment length}
+######################
+######################
+# 60kb Segment length filter
+
+LWK.60 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/LWK.Deni.60kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/LWK.Deni.60kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+YRI.60 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/YRI.Deni.60kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/YRI.Deni.60kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+MSL.60 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/MSL.Deni.60kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/MSL.Deni.60kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+GWD.60 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/GWD.Deni.60kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/GWD.Deni.60kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+ESN.60 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/ESN.Deni.60kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/ESN.Deni.60kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+allAFR.60 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFR.Deni.60kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFR.Deni.60kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+```
+```{r 30kb Segment Length}
+######################
+######################
+# 30kb Segment length filter
+
+LWK.30 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/LWK.Deni.30kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/LWK.Deni.30kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+YRI.30 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/YRI.Deni.30kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/YRI.Deni.30kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+MSL.30 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/MSL.Deni.30kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/MSL.Deni.30kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+GWD.30 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/GWD.Deni.30kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/GWD.Deni.30kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+ESN.30 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/ESN.Deni.30kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/ESN.Deni.30kb.bed",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+allAFR.30 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFR.Deni.30kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFR.Deni.30kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+#######
+
+
+
+
+```
+
+```{r}
+
+allpops.50 <- fread("bedmap --ec --delim '\t' --echo --count ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/all.Deni.50kb.bed.merged ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/all.Deni.50kb.bed",
+            col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+```
+
+
+```{r}
+
+# ggplot() + theme_classic() +
+#   geom_density(data=dt, aes(x=count), fill="blue", alpha=0.75)
+# 
+ggplot() + theme_classic() +
+  stat_ecdf(data=allpops.50, aes(x=count, color="allpops")) +
+  coord_cartesian(xlim=c(0,2400), expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1)) +
+  scale_x_continuous(breaks = seq(0,2400,240),name = 'frequency in all_pop') +
+  theme(
+    panel.grid.major = element_line(color="grey")
+  )
+
+
+subpop.50 <- ggplot() + theme_classic() + 
+  stat_ecdf(data=LWK.50, aes(x=count, color="LWK.50")) +
+  stat_ecdf(data=YRI.50, aes(x=count, color="YRI.50")) +
+  stat_ecdf(data=MSL.50, aes(x=count, color="MSL.50")) +
+  stat_ecdf(data=GWD.50, aes(x=count, color="GWD.50")) +
+  stat_ecdf(data=ESN.50, aes(x=count, color="ESN.50")) +
+  
+  coord_cartesian(xlim=c(0,120), expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1), name = "proportion of merged calls") +
+  scale_x_continuous(breaks = seq(0,120,12), labels=seq(0,120/120, round(12/120, digits = 2)),name = 'frequency in AFR_pop') +
+  theme(
+    panel.grid.major = element_line(color="grey")
+  )
+
+subpop.60 <- ggplot() + theme_classic() + 
+  stat_ecdf(data=LWK.60, aes(x=count, color="LWK.60")) +
+  stat_ecdf(data=YRI.60, aes(x=count, color="YRI.60")) +
+  stat_ecdf(data=MSL.60, aes(x=count, color="MSL.60")) +
+  stat_ecdf(data=GWD.60, aes(x=count, color="GWD.60")) +
+  stat_ecdf(data=ESN.60, aes(x=count, color="ESN.60")) +
+  
+  coord_cartesian(xlim=c(0,120), expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1), name = "proportion of merged calls") +
+  scale_x_continuous(breaks = seq(0,120,12), labels=seq(0,120/120, round(12/120, digits = 2)),name = 'frequency in AFR_pop') +
+  theme(
+    panel.grid.major = element_line(color="grey")
+  )
+  
+
+subpop.30 <- ggplot() + theme_classic() + 
+
+  stat_ecdf(data=LWK.30, aes(x=count, color="LWK.30")) +
+  stat_ecdf(data=YRI.30, aes(x=count, color="YRI.30")) +
+  stat_ecdf(data=MSL.30, aes(x=count, color="MSL.30")) +
+  stat_ecdf(data=GWD.30, aes(x=count, color="GWD.30")) +
+  stat_ecdf(data=ESN.30, aes(x=count, color="ESN.30")) +
+  coord_cartesian(xlim=c(0,120), expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1), name = "proportion of merged calls") +
+  scale_x_continuous(breaks = seq(0,120,12), labels=seq(0,120/120, round(12/120, digits = 2)),name = 'frequency in AFR_pop') +
+  theme(
+    panel.grid.major = element_line(color="grey")
+  )
+  
+
+allpop <- ggplot() + theme_classic() + 
+  stat_ecdf(data=allAFR.60, aes(x=count, color="allAFR.60")) +
+  stat_ecdf(data=allAFR.50, aes(x=count, color="allAFR.50")) +
+  stat_ecdf(data=allAFR.30, aes(x=count, color="allAFR.30")) +
+  coord_cartesian(xlim=c(0,504), expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1), name="proportion of merged calls") +
+  scale_x_continuous(breaks = seq(0,500,50), name = 'frequency in allAFR') +
+  #scale_x_continuous(breaks = seq(0,500,50), labels = seq(0,500/500,50/500), name = 'frequency in allAFR') +
+  theme(
+    panel.grid.major = element_line(color="grey")
+  )
+
+
+grid.arrange(subpop.60, subpop.50, subpop.30,allpop,ncol=2)
+
+
+# ggplot() + theme_classic() + 
+#   geom_density(data=LWK, aes(x=count, color="LWK")) +
+#   geom_density(data=YRI, aes(x=count, color="YRI")) +
+#   geom_density(data=MSL, aes(x=count, color="MSL")) +
+#   geom_density(data=GWD, aes(x=count, color="GWD")) +
+#   geom_density(data=ESN, aes(x=count, color="ESN")) +
+# #  geom_density(data=allAFR, aes(x=count, color="allAFR")) +
+#   coord_cartesian(xlim=c(0,120), expand = FALSE) +
+# #  scale_y_continuous(breaks = seq(0,1,0.1)) +
+#   scale_x_continuous(breaks = seq(0,120,20)) +
+#   theme(
+#     panel.grid.major = element_line(color="grey")
+#   )
+
+```
+

@@ -19,7 +19,8 @@ library(VennDiagram)
 ```{r echo=FALSE}
 
 
-Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.originalmerge.LOD4.30K.txt', header=TRUE)
+Altai.2013.p_SingleArchaic = fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/Altai2013pub.1KGP3.LOD4.50K.filterAFRDeni.txt', header=FALSE,
+                                   col.names =c('chr','start','end','score1','score2','length_bp','pop','anc','ID') )
 
 
 nonAfr_totMB <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/EUR_EAS_SAS_AMR_calls.bed',
@@ -199,13 +200,15 @@ draw.pairwise.venn(
   area2 = as.integer(nonAfr_mergedMB),
   cross.area = as.integer(overlap_bases_mergedMB),
   #category = c('Afr_mergedMB','nonAfr_mergedMb'),
-  category = c('African','non-African'),
+  category = c('African (Mb)','Non-African (Mb)'),
   fill=c('red2','dodgerblue'),
   ext.text = FALSE,
   cat.fontface='bold',
+  cat.fontfamily = 'Helvetica',
   cat.default.pos = 'text',
-  cat.just = list(c(2.5,-1), c(0.7,-1)),
+  cat.just = list(c(1.5,-1), c(0.7,-1)),
   fontface = 'bold',
+  fontfamily = 'Helvetica',
   cex=2, cat.cex=2,
   print.mode = "raw",
   alpha=c(0.7,0.9)

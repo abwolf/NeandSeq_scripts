@@ -1,0 +1,80 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "4/5/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+```
+
+
+```{r}
+
+altai.60k.dt <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.60K.by_ind.bed', col.names = c('ID','start','end','pop','anc'))
+altai.30k.dt <- fread('~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.30K.by_ind.bed', col.names = c('ID','start','end','pop','anc'))
+
+deni.60k.dt <- fread('~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFRcalls.60K.by_ind.bed', col.names = c('ID','start','end','pop','anc'))
+deni.30k.dt <- fread('~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFRcalls.30K.by_ind.bed', col.names = c('ID','start','end','pop','anc'))
+
+altai.deni.60k.intersect <- fread('bedmap --ec --delim "\t" --echo --bases-uniq-f --indicator ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.60K.by_ind.bed ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFRcalls.60K.by_ind.bed', 
+                              col.names = c('ID','start','end','pop','anc','bases_f','indicator')
+                              ) %>% 
+                        filter(indicator!=0) %>%
+                        as.data.table()
+
+
+altai.deni.30k.intersect <- fread('bedmap --ec --delim "\t" --echo --bases-uniq-f --indicator ~/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/AFRcalls.30K.by_ind.bed ~/DATALab/NeanderthalSeq/IBDmix/Deni.2013.p_SingleArchaic.final_callset/AFRcalls.30K.by_ind.bed', 
+                              col.names = c('ID','start','end','pop','anc','bases_f','indicator')
+                              ) %>% 
+                        filter(indicator!=0) %>%
+                        as.data.table()
+
+
+
+afr.60k.kb <- altai.60k.dt %>% mutate(len_kb = (end-start)/1000) %>% summarise_at(.vars = 'len_kb', .funs = sum)
+intersect.60k.kb <- altai.deni.60k.intersect %>% mutate(len_kb = (end-start)/1000) %>% summarise_at(.vars = 'len_kb', .funs = sum)
+
+afr.30k.kb <- altai.30k.dt %>% mutate(len_kb = (end-start)/1000) %>% summarise_at(.vars = 'len_kb', .funs = sum)
+intersect.30k.kb <- altai.deni.30k.intersect %>% mutate(len_kb = (end-start)/1000) %>% summarise_at(.vars = 'len_kb', .funs = sum)
+
+
+intersect.60k.kb/afr.60k.kb
+intersect.30k.kb/afr.30k.kb
+
+nrow(altai.deni.60k.intersect)/nrow(altai.60k.dt)
+nrow(altai.deni.30k.intersect)/nrow(altai.30k.dt)
+
+afr.per_ind.kb <- 
+                  altai.60k.dt %>%
+                  #altai.30k.dt %>%
+                  mutate(ind = str_split(ID,pattern = "_",2, simplify = TRUE)[,2]) %>% 
+                  mutate(len_kb = (end-start)/1000) %>% 
+                  group_by(ind) %>%
+                  #group_by(ID) %>%
+                  summarise(sum_len_kb=sum(len_kb)) %>% 
+                  as.data.table()
+
+intersect.per_ind.kb <- 
+                  altai.deni.60k.intersect %>% 
+                  #altai.deni.30k.intersect %>%
+                  mutate(ind = str_split(ID,pattern = "_",2, simplify = TRUE)[,2]) %>% 
+                  mutate(len_kb = (end-start)/1000) %>% 
+                  group_by(ind) %>%
+                  #group_by(ID) %>%
+                  summarise(sum_len_kb=sum(len_kb)) %>% 
+                  as.data.table()
+
+
+
+
+median(intersect.per_ind.kb$sum_len_kb) / median(afr.per_ind.kb$sum_len_kb)
+
+```
+

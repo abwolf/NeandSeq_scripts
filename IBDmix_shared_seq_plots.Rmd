@@ -23,6 +23,7 @@ dirs <- list.dirs('~/DATALab/NeanderthalSeq/IBDmix')
 #for(i in dirs[2:5]){
 #  print(i)
   i <-  "/Users/abwolf/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/" 
+  i <-  "/Users/abwolf/DATALab/NeanderthalSeq/IBDmix/" 
   dirpath <- i
   setwd(dirpath)
 
@@ -97,6 +98,28 @@ p_0.001.a <-
   
   
 #######
+
+
+ggplot() + theme_bw() + 
+  stat_ecdf(data = nonAFR.total.unmerged, aes(x = (end-strt)/1000, color="nonAFR"), geom="step") +  
+  stat_ecdf(data = AFR.unshared.unmerged, aes(x = (end-strt)/1000, color="AFR.unique"), geom="step") + 
+  stat_ecdf(data = AFR.shared.unmerged, aes(x = (end-strt)/1000, color="AFR.shared"), geom="step") + 
+  coord_cartesian(xlim=c(25,300), expand = FALSE) + 
+  scale_x_continuous(breaks=seq(20,300,20)) + 
+  scale_y_continuous(breaks=seq(0,1.0,0.2)) + 
+  scale_color_brewer(type = 'qual', palette = 'Dark2')
+
+
+ggplot() + theme_bw() + 
+  stat_ecdf(data = Deni.dt %>% filter(!pop %in% c('ACB', 'ASW') ), aes(x = size/1000, color=anc), geom="step") +  
+  #stat_ecdf(data = AFR.unshared.unmerged, aes(x = (end-strt)/1000, color="AFR.unique"), geom="step") + 
+  #stat_ecdf(data = AFR.shared.unmerged, aes(x = (end-strt)/1000, color="AFR.shared"), geom="step") + 
+  coord_cartesian(xlim=c(25,300), expand = FALSE) + 
+  scale_x_continuous(breaks=seq(20,300,20)) + 
+  scale_y_continuous(breaks=seq(0,1.0,0.2)) + 
+  ggtitle('Denisovan Calls segment size ECDF', ) +
+  scale_color_brewer(type = 'qual', palette = 'Dark2')
+
 
   ggplot() + 
   theme_bw() +
@@ -340,30 +363,43 @@ AFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fracti
 
 nonAFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
 
-nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator'))
 
 nonAFR.total.unmerged <- fread('EUR_EAS_SAS_AMR_calls.bed', col.names = c('chr','strt','end','ID', 'pop','anc'))
+
+
+EUR.total.sum <- fread('EURcalls.bed', select = 1:3, col.names = c('chr','strt','end')) %>% 
+                  summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN.total.sum <- fread('EAScalls.bed', select = 1:3, col.names = c('chr','strt','end')) %>% 
+                  summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN_EUR.total.ratio <- ASN.total.sum/EUR.total.sum
+
+EUR.minusAFR.sum <- fread(cmd = 'bedops --ec -n EURcalls.bed YRIcalls.bed.merged', select = 1:3, col.names = c('chr','strt','end')) %>%
+                    summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN.minusAFR.sum <- fread(cmd = 'bedops --ec -n EAScalls.bed YRIcalls.bed.merged', select = 1:3, col.names = c('chr','strt','end')) %>%
+                    summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN_EUR.minusAFR.ratio <- ASN.minusAFR.sum/EUR.minusAFR.sum
   
-#####
-print('Count of segments that overlap')
-# AFR.EURshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count YRIcalls.bed EURcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
-# 
-# AFR.EASshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count YRIcalls.bed EAScalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
-# 
-# EUR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EURcalls.bed YRIcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
-# 
-# EAS.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EAScalls.bed YRIcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
-#####
+# #####
+# print('Count of segments that overlap')
+# # AFR.EURshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count YRIcalls.bed EURcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
+# # 
+# # AFR.EASshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count YRIcalls.bed EAScalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
+# # 
+# # EUR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EURcalls.bed YRIcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
+# # 
+# # EAS.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EAScalls.bed YRIcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
+# #####
 
 AFR.nonAFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count YRIcalls.bed EUR_EAScalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
 
 nonAFR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EUR_EAScalls.bed YRIcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
 
-#####
+# ####
 # SAN.nonAFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count SANcalls.bed EUR_EAScalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
 # 
 # nonAFR.SANshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EUR_EAScalls.bed SANcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','count')) %>% filter(count>0)
-#####
+# ####
 
 nrow.AFR <- fread('YRIcalls.bed') %>% nrow() 
 nrow.SAN <- fread('SANcalls.bed') %>% nrow()  
@@ -371,7 +407,7 @@ nrow.EUR <- fread('EURcalls.bed') %>% nrow()
 nrow.EAS <- fread('EAScalls.bed') %>% nrow()
 nrow.nonAFR <- fread('EUR_EAScalls.bed') %>% nrow()
 
-#####
+# ####
 # median(EUR.AFRshared.unmerged.count$count)/nrow(AFR.EURshared.unmerged.count)
 # median(EAS.AFRshared.unmerged.count$count)/nrow(AFR.EASshared.unmerged.count)
 # median(AFR.EASshared.unmerged.count$count)/nrow(EAS.AFRshared.unmerged.count)
@@ -387,7 +423,7 @@ nrow.nonAFR <- fread('EUR_EAScalls.bed') %>% nrow()
 # EUR.AFRshared.merged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EURcalls.bed.merged YRIcalls.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>0)
 # 
 # EAS.AFRshared.merged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count EAScalls.bed.merged YRIcalls.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>0)
-#####
+# ####
 
 
 print('Count of shared/unshared segements w/in that segments population. i.e. For a non-shared YRI segment, how frequent is it in the YRI populations?')
@@ -398,7 +434,12 @@ AFR.nonAFRunshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fra
 AFR.nonAFRshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator YRIcalls.bed EUR_EAScalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
 
+
 #####
+
+# AFR.nonAFRshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator AFRcalls.bed EUR_EAScalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
+#                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
+
 # SAN.nonAFRunshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator SANcalls.bed EUR_EAScalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==0) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
 #                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
 # 
@@ -423,11 +464,31 @@ AFR.nonAFRshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fract
 
 print('Measure how frequent an EUR or EAS segment is in its respective population if it is shared with YRI, but not shared with the other nonAFR pop ; does this explain why YRI-masking has a greater effect on EUR than EAS even though similar rates of overlap?')
 
-EUR_AFRshared.notEAS <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator EURcalls.bed YRIcalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - EAScalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
-                                  col.names = c('chr','strt','end','count')) %>% filter(count>0)
+ EUR_AFRshared.notEAS <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator EURcalls.bed YRIcalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - EAScalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
+                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
+
 
 EAS_AFRshared.notEUR <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator EAScalls.bed YRIcalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - EURcalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
+ 
+nonAFR_AFRshared <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator EUR_EAScalls.bed YRIcalls.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==1) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
+                                  col.names = c('chr','strt','end','count')) %>% filter(count>0) %>% summarise(sum(as.numeric(end-strt))/1000000) %>% as.numeric()
+
+#  ##Lu's version
+# EUR_AFRshared.notEAS <- fread("bedtools intersect -a YRIcalls.bed.merged -b EURcalls.bed.merged | sort-bed - | bedtools subtract -a - -b EAScalls.bed.merged | bedops --merge -",
+#                                   col.names = c('chr','strt','end')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+# 
+# EUR_AFRshared.total <- fread("bedtools intersect -a YRIcalls.bed.merged -b EURcalls.bed.merged | sort-bed - | bedops --merge -",
+#                                   col.names = c('chr','strt','end')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+# 
+# ##Lu's version
+# EAS_AFRshared.notEUR <- fread("bedtools intersect -a YRIcalls.bed.merged -b EAScalls.bed.merged | sort-bed - | bedtools subtract -a - -b EURcalls.bed.merged | bedops --merge - ",
+#                                   col.names = c('chr','strt','end')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+# 
+# EAS_AFRshared.total <- fread("bedtools intersect -a YRIcalls.bed.merged -b EAScalls.bed.merged | sort-bed - | bedops --merge -",
+#                                   col.names = c('chr','strt','end')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+
+
 
 # print('On average, how much extra is removed in EUR due to YRI masking than in EAS?')
 # EUR_AFRshared.notEAS %>% group_by() %>% summarise(sum=sum(as.numeric(end-strt))/1000000/503)
@@ -441,9 +502,9 @@ plot.theme <-theme(
         panel.grid=element_blank(),
         axis.line.x=element_line(color="black", size=2),
         axis.line.y=element_line(color="black",size=2),
-        plot.title=element_text(face="bold", size=32),
-        axis.text=element_text(face="bold", size=32),
-        axis.title=element_text(face="bold", size=32)
+        plot.title=element_text(face="bold", color="black", size=42, hjust = 0.5, family = "Helvetica"),
+        axis.text=element_text(face="bold", color="black", size=42, family = "Helvetica"),
+        axis.title=element_text(face="bold", color="black", size=42, family = "Helvetica")
         )
 
 
@@ -455,8 +516,9 @@ p_0.001.a <-
   geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=4, alpha=0.2) +
   geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=4, alpha=0.2) +
   geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
-  coord_cartesian(xlim=c(3.4,7), expand = FALSE) +
-  scale_x_continuous(breaks=seq(3.5,7,by = 1), labels=seq(3.5,7,by = 1)) +
+  coord_cartesian(xlim=c(3.97,7), ylim=c(0,3.5), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  scale_y_continuous(breaks = seq(0,5,by=1), labels = scales::number_format(accuracy = 0.1)) +
   ggtitle('Distribution of Segment Lengths\n') +
   scale_color_brewer(type = 'qual', palette = 'Dark2') +
   scale_fill_brewer(type = 'qual', palette = 'Dark2') +
@@ -466,7 +528,7 @@ p_0.001.a <-
 
 
 #############
-  ggplot() + 
+p_0.001.b <-   ggplot() + 
   theme_classic() +
   geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=2, alpha=0.9) +
   geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=2, alpha=0.7) +
@@ -580,14 +642,35 @@ p3 <-
   scale_x_discrete(limits=c('Below 10%', 'Above 10%')) +
   scale_y_continuous(breaks = seq(0,1,0.2), labels= seq(0,1,0.2)) +
   coord_cartesian(ylim=c(0.045,1.0),expand = TRUE) +
-  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
-  ggtitle('Frequency of African Segments in African Population\n') +
+  scale_fill_manual(values=c('Below 10%'='dodgerblue4','Above 10%'='orange3')) +
+  ggtitle('Frequency of African Segments in Africans\n') +
   xlab('\nFrequency') +
   ylab('Proportion of Total Calls\n') +
   plot.theme
 
 
 ########################
+
+  ggplot() +
+  theme_classic() +
+  geom_bar(data = data.table(c('Below 10%', 'Above 10%'), 
+                             c(AFR.nonAFRshared.count %>% filter(count<(0.1*504)) %>% nrow()/nrow(AFR.nonAFRshared.count %>% filter(count <= 504)), 
+                               AFR.nonAFRshared.count %>% filter(count>(0.1*504)) %>% nrow()/nrow(AFR.nonAFRshared.count %>% filter(count <= 504)))
+                             ) %>% 
+                  setnames(c('category','proportion')),
+           aes(x=category, y=proportion, fill=category), stat = "identity", width = 0.5) +
+  scale_x_discrete(limits=c('Below 10%', 'Above 10%')) +
+  scale_y_continuous(breaks = seq(0,1,0.2), labels= seq(0,1,0.2)) +
+  coord_cartesian(ylim=c(0.045,1.0),expand = TRUE) +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  ggtitle('Frequency of African Segments in Africans\n') +
+  xlab('\nFrequency') +
+  ylab('Proportion of Total Calls\n') +
+  plot.theme
+
+
+
+
 #   
 # 
 #   ggplot() +
@@ -663,23 +746,67 @@ p3 <-
 p4 <- 
   ggplot() +
   theme_classic() +
-  geom_bar(data = data.table(c('EUR_AFR_Shared', 'EAS_AFR_Shared'), 
-                             c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(len)/1000000) %>% as.numeric(), 
-                               EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(len)/1000000) %>% as.numeric() )
-                             ) %>% 
-                  setnames(c('category','sum_Mb')),
-           aes(x=category, y=sum_Mb, fill=category), stat = "identity", width=0.5 ) +
-  scale_x_discrete(limits=c('EAS_AFR_Shared', 'EUR_AFR_Shared'), labels=c('EAS_AFR', 'EUR_AFR')) +
-#  scale_y_continuous(breaks = seq(0,12,2), labels= seq(0,12,2)) +
-#  coord_cartesian(ylim=c(0,13)) +
-  scale_fill_brewer(type = 'qual', palette = 'Dark2', direction = -1) +
-  ggtitle('Amount of Exclusively Shared Sequence\n') +
-  coord_cartesian(ylim=c(50,1050), expand=TRUE) +
-  xlab('\nPaired Populations') +
-  ylab('Shared Sequence (Mb)\n') +
+  geom_bar(data = data.table(c('ASN_EUR.total.ratio', 'ASN_EUR.minusAFR.ratio'), 
+                             c(ASN_EUR.total.ratio, ASN_EUR.minusAFR.ratio)) %>% 
+                  setnames(c('category','ratio')),
+           aes(x=category, y=ratio, fill=category), stat = "identity", width=0.5 ) +
+  geom_hline(yintercept = 1, linetype='dashed', size = 2) +
+  scale_x_discrete(limits=c('ASN_EUR.total.ratio', 'ASN_EUR.minusAFR.ratio'), labels=c('Unmaksed', 'Masked')) +
+  scale_y_continuous(breaks = seq(0,1.5,by = 0.2), labels=seq(0,1.5,by = 0.2)) +
+  coord_cartesian(ylim=c(0.06,1.4), expand = TRUE) +
+  scale_fill_manual(values=c('ASN_EUR.total.ratio'='dodgerblue4', 'ASN_EUR.minusAFR.ratio'='orange3')) +
+  ggtitle('Masking African Sequence\n') +
+  xlab('\nCategory') +
+  ylab('Ratio of Called Sequence\n') +
   plot.theme
 
+
+
+p5 <- 
+  ggplot() +
+  theme_classic() +
+  geom_bar(data = data.table(c('EUR_AFR_Shared', 'EAS_AFR_Shared'),
+                             c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(len)/1000000)/nonAFR_AFRshared %>% as.numeric(),
+                               EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(len)/1000000)/nonAFR_AFRshared %>% as.numeric() )
+                            # c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000)/(EUR.total.sum/1000000) %>% as.numeric(),
+                            #   EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000)/(ASN.total.sum/1000000) %>% as.numeric())
+                            # c(EUR_AFRshared.notEAS/EUR_AFRshared.total,
+                            #   EAS_AFRshared.notEUR/EAS_AFRshared.total)
+                             ) %>%
+                  setnames(c('category','sum_Mb')),
+           aes(x=category, y=sum_Mb, fill=category), stat = "identity", width=0.5 ) +
+  scale_x_discrete(limits=c('EAS_AFR_Shared', 'EUR_AFR_Shared'), labels=c('EAS and AFR', 'EUR and AFR')) +
+  #  scale_y_discrete(limits = seq(0,0.1,by = 0.025), labels=seq(0,0.1,by = 0.025)) +
+  coord_cartesian(ylim=c(0.0045,0.3)) +
+  scale_fill_manual(values=c('EAS_AFR_Shared'='dodgerblue4', 'EUR_AFR_Shared'='orange3')) +
+  ggtitle('Amount of Exclusively Shared Sequence\n') +
+  # coord_cartesian(ylim=c(50,1050), expand=TRUE) +
+  xlab('\nPaired Populations') +
+  ylab('Proportion of Shared Sequence\n') +
+  plot.theme
+
+
 ###################
+
+# ggplot() +
+# theme_classic() +
+# geom_bar(data = data.table(c('EUR_AFR_Shared', 'EAS_AFR_Shared'), 
+#                            c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(len)/1000000)/nonAFR_AFRshared %>% as.numeric(), 
+#                              EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(len)/1000000)/nonAFR_AFRshared %>% as.numeric() )
+#                            ) %>% 
+#                 setnames(c('category','sum_Mb')),
+#          aes(x=category, y=sum_Mb, fill=category), stat = "identity", width=0.5 ) +
+# scale_x_discrete(limits=c('EAS_AFR_Shared', 'EUR_AFR_Shared'), labels=c('EAS and AFR', 'EUR and AFR')) +
+# #  scale_y_discrete(limits = seq(0,0.1,by = 0.025), labels=seq(0,0.1,by = 0.025)) +
+# coord_cartesian(ylim=c(0.0045,0.1)) +
+# scale_fill_manual(values=c('EAS_AFR_Shared'='dodgerblue4', 'EUR_AFR_Shared'='orange3')) +
+# ggtitle('Amount of Exclusively Shared Sequence\n') +
+# # coord_cartesian(ylim=c(50,1050), expand=TRUE) +
+# xlab('\nPaired Populations') +
+# ylab('Proportion of Shared Sequence\n') +
+# plot.theme
+
+
 #   
 #   ggplot() + 
 #   theme_bw() +
@@ -704,11 +831,13 @@ p4 <-
 # dev.off()
 
 print('generate graph')
-#pdf("EmpiricalSegments_SFS.pdf", width = 30, height = 9)
+pdf("~/Desktop/EmpiricalSegments_SFS.pdf", width = 40, height = 9)
 pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/EmpiricalSegments_SegLengthSFS.pdf", width = 40, height = 9)
+pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/EmpiricalSegments_SegLengthSFS.pdf", width = 55, height = 9)
 #grid.arrange(p1, p3, ncol=2)
-grid.arrange(p_0.001.a, p3, p4, ncol=3)
-#grid.arrange(p_0.001.a,p1,p3,p4, ncol=4)
+#grid.arrange(p_0.001.a, p3, p4, p_0.001.b, ncol=4)
+grid.arrange(p_0.001.a,p3,p4, ncol=3)
+grid.arrange(p_0.001.a,p3,p4,p5, ncol=4)
 dev.off()
 
 
@@ -722,26 +851,69 @@ dev.off()
 
 ```{r SFS Simulated Data}
 
-  #i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0/overlaps/"
-  #i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005/overlaps/"
-  i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005/overlaps/"
-  #i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0001/overlaps/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0/overlaps/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005/overlaps/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005/overlaps/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.1/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0001/overlaps/"
+
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.05/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0/IBDmixCalls"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.05/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.000025/IBDmixCalls/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.05/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005/IBDmixCalls/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.05/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005/IBDmixCalls/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/n1_0.05/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0001/IBDmixCalls/"
+  # 
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/preOOA/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0_pOOA_0.1/IBDmixCalls/"
+  # i <-  "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/preOOA/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0_pOOA_0.05/IBDmixCalls/"
+
+  # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.000025_preOOA_0.03/IBDmixCalls/"
+   # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.000025_preOOA_0.05/IBDmixCalls/"
+   # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.000025_preOOA_0.1/IBDmixCalls/"
+   # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005_preOOA_0.1/IBDmixCalls/"
+   # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005_preOOA_0.05/IBDmixCalls/"
+  # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005_preOOA_0.1/IBDmixCalls/"
+  # i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Sriram/mixture_model/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005_preOOA_0.05/IBDmixCalls/"
+
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.0005_preOOA_0.0/ibdmix/keep"
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.00005_preOOA_0.0/ibdmix/keep"
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.000025_preOOA_0.0/ibdmix/keep"
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.0_preOOA_0.0/ibdmix/keep"
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.0_preOOA_0.1_t_250/ibdmix/keep"
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.0_preOOA_0.1_t_150/ibdmix/keep"
+ i <- "/Users/abwolf/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.0_preOOA_0.1_t_100/ibdmix/keep"
+ 
+ i <- "~/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.00005_preOOA_0.1_t_100/ibdmix/keep"
+ i <- "~/DATALab/SimulatedDemographic/Sstar/chr1_variable_ref/simulations/Wenqing/n1_0.05_mEuAf_0.0005_preOOA_0.1_t_100/ibdmix/keep"
+ 
+ 
+
   dirpath <- i
   setwd(dirpath)
 
 
 # Size Distribution
   
-AFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.30kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==1)
+AFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.50kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==1)
 
-AFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.30kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==0)
+AFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.50kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==0)
 
 ####
-nonAFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==1)
+# nonAFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==1)
 
-nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==0)
+#nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged', col.names = c('chr','strt','end','bases','indicator')) %>% filter(indicator==0)
 
-nonAFR.total.unmerged <- fread('IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end'))
+nonAFR.total.unmerged <- fread('IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end'))
+
+EUR.total.sum <- fread('IntroSeg.EUR.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end')) %>% 
+                  summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN.total.sum <- fread('IntroSeg.ASN.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end')) %>% 
+                  summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN_EUR.total.ratio <- ASN.total.sum/EUR.total.sum
+
+EUR.minusAFR.sum <- fread(cmd = 'bedops --ec -n IntroSeg.EUR.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged', col.names = c('chr','strt','end')) %>%
+                    summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN.minusAFR.sum <- fread(cmd = 'bedops --ec -n IntroSeg.ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged', col.names = c('chr','strt','end')) %>%
+                    summarise(sum(as.numeric(end-strt))) %>% as.numeric()
+ASN_EUR.minusAFR.ratio <- ASN.minusAFR.sum/EUR.minusAFR.sum
 
 #####  
 # Count of segments that overlap
@@ -754,14 +926,14 @@ nonAFR.total.unmerged <- fread('IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed', col.nam
 # EAS.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.5 --count IntroSeg.ASN.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>0)
 #####
 
-AFR.nonAFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.AFR.D4E0.002.ALL.30kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end', 'bases','count')) %>% filter(count>0)
+AFR.nonAFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.AFR.D4E0.002.ALL.50kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end', 'bases','count')) %>% filter(count>0)
 
-nonAFR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end', 'bases','count')) %>% filter(count>0)
+nonAFR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end', 'bases','count')) %>% filter(count>0)
 
-nrow.AFR <- fread('IntroSeg.AFR.D4E0.002.ALL.30kb.bed') %>% nrow()  
-nrow.EUR <- fread('IntroSeg.EUR.D4E0.002.ALL.30kb.bed') %>% nrow()
-nrow.ASN <- fread('IntroSeg.ASN.D4E0.002.ALL.30kb.bed') %>% nrow()
-nrow.nonAFR <- fread('IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed') %>% nrow()
+nrow.AFR <- fread('IntroSeg.AFR.D4E0.002.ALL.50kb.bed') %>% nrow()  
+nrow.EUR <- fread('IntroSeg.EUR.D4E0.002.ALL.50kb.bed') %>% nrow()
+nrow.ASN <- fread('IntroSeg.ASN.D4E0.002.ALL.50kb.bed') %>% nrow()
+nrow.nonAFR <- fread('IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed') %>% nrow()
 
 #####
 # median(EUR.AFRshared.unmerged.count$count)
@@ -782,10 +954,10 @@ nrow.nonAFR <- fread('IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed') %>% nrow()
 
 
 # Count of shared/unshared segements w/in that segments population. i.e. For a non-shared YRI segment, how frequent is it in the YRI populations?
-AFR.nonAFRunshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.30kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==0) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
+AFR.nonAFRunshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.50kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==0) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
 
-AFR.nonAFRshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.30kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.30kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
+AFR.nonAFRshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.AFR.D4E0.002.ALL.50kb.bed IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --count - ",
                                  col.names = c('chr','strt','end','count')) %>% filter(count>0)
 
 #####
@@ -804,11 +976,31 @@ AFR.nonAFRshared.count <- fread("bedmap --ec --delim '\t' --echo --bases --fract
 
 # Measure how frequent an EUR or EAS segment is in its respective population if it is shared with YRI, but not shared with the other nonAFR pop ; does this explain why YRI-masking has a greater effect on EUR than EAS even though similar rates of overlap?
 
-EUR_AFRshared.notEAS <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - IntroSeg.ASN.D4E0.002.ALL.30kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
+EUR_AFRshared.notEAS <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - IntroSeg.ASN.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
 
-EAS_AFRshared.notEUR <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.ASN.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - IntroSeg.EUR.D4E0.002.ALL.30kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
+EAS_AFRshared.notEUR <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} {if ($NF==1) print $1,$2,$3 }' | bedmap --ec --delim '\t' --echo --fraction-map 0.001 --indicator - IntroSeg.EUR.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==0) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
                                   col.names = c('chr','strt','end','count')) %>% filter(count>0)
+
+nonAFR_AFRshared <- fread("bedmap --ec --delim '\t' --echo --bases --fraction-map 0.001 --indicator IntroSeg.EUR_ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged | awk 'BEGIN {OFS=\"\t\"} { if($NF==1) print $1,$2,$3}' | bedmap --ec --delim '\t' --echo --count - ",
+                                  col.names = c('chr','strt','end','count')) %>% filter(count>0) %>% summarise(sum(as.numeric(end-strt))/1000000) %>% as.numeric()
+
+
+# ##Lu's version
+# EUR_AFRshared.notEAS <- fread("bedtools intersect -a IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged -b IntroSeg.EUR.D4E0.002.ALL.50kb.bed.merged | sort-bed - | bedtools subtract -a - -b IntroSeg.ASN.D4E0.002.ALL.50kb.bed.merged | bedops --merge -",
+#                                   col.names = c('chr','strt','end'), colClasses = c('numeric','numeric','numeric')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+# 
+# EUR_AFRshared.total <- fread("bedtools intersect -a IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged -b IntroSeg.EUR.D4E0.002.ALL.50kb.bed.merged | sort-bed - | bedops --merge -",
+#                                   col.names = c('chr','strt','end'), colClasses = c('numeric','numeric','numeric')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+# 
+# ##Lu's version
+# EAS_AFRshared.notEUR <- fread("bedtools intersect -a IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged -b IntroSeg.ASN.D4E0.002.ALL.50kb.bed.merged | sort-bed - | bedtools subtract -a - -b IntroSeg.EUR.D4E0.002.ALL.50kb.bed.merged | bedops --merge - ",
+#                                   col.names = c('chr','strt','end'), colClasses = c('numeric','numeric','numeric')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+# 
+# EAS_AFRshared.total <- fread("bedtools intersect -a IntroSeg.AFR.D4E0.002.ALL.50kb.bed.merged -b IntroSeg.ASN.D4E0.002.ALL.50kb.bed.merged | sort-bed - | bedops --merge -",
+#                                   col.names = c('chr','strt','end'), colClasses = c('numeric','numeric','numeric')) %>% summarise(sum_Mb=sum(end-strt)/1000000) %>% as.numeric()
+
+
 
 # # On average, an extra 1.6Mb of sequence is removed in EUR due to YRI masking than in EAS...
 # EUR_AFRshared.notEAS %>% group_by() %>% summarise(sum=sum(as.numeric(end-strt))/1000000/503)
@@ -816,17 +1008,18 @@ EAS_AFRshared.notEUR <- fread("bedmap --ec --delim '\t' --echo --bases --fractio
 
 
 
-plot.theme <-theme(
-        #legend.position="none"m
+plot.theme <- theme(
+        #legend.position="none",
         legend.text=element_text(size=1),
         #panel.grid.major=element_line(color="black"),
         panel.grid=element_blank(),
         axis.line.x=element_line(color="black", size=2),
         axis.line.y=element_line(color="black",size=2),
-        plot.title=element_text(face="bold", size=32),
-        axis.text=element_text(face="bold", size=32),
-        axis.title=element_text(face="bold", size=32)
+        plot.title=element_text(face="bold", color="black", size=42, hjust = 0.5, family = "Helvetica"),
+        axis.text=element_text(face="bold", color="black", size=42, family = "Helvetica"),
+        axis.title=element_text(face="bold", color="black", size=42, family = "Helvetica")
         )
+
 
 #plot.theme <- theme()
 
@@ -837,8 +1030,9 @@ p_0.001.a <-
   geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=4, alpha=0.2) +
   geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=4, alpha=0.2) +
   geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
-  coord_cartesian(xlim=c(3.4,7), ylim=c(0,4.1), expand = c(0)) +
-  scale_x_continuous(breaks=seq(3.5,7,by = 1), labels=seq(3.5,7,by = 1)) +
+  coord_cartesian(xlim=c(3.99,7), ylim=c(0,3.5), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  scale_y_continuous(breaks = seq(0,5,by=1), labels = scales::number_format(accuracy = 0.1)) +
   ggtitle('Distribution of Segment Lengths\n') +
   scale_color_brewer(type = 'qual', palette = 'Dark2') +
   scale_fill_brewer(type = 'qual', palette = 'Dark2') +
@@ -848,12 +1042,13 @@ p_0.001.a <-
 
 ###################
 
+p_0.001.b <-   
   ggplot() + 
   theme_classic() +
-  geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=2, alpha=0.9) +
-  geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=2, alpha=0.7) +
-  geom_density(data = nonAFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.unshared.unmerged", fill="nonAFR.unshared.unmerged"), size=2, alpha=0.3) +
-  geom_density(data = nonAFR.shared.unmerged , aes(x=log((end-strt)/1000), color="nonAFR.shared.unmerged", fill="nonAFR.shared.unmerged"), size=2, alpha=0.3) +
+  geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.unshared.unmerged", fill="nonAFR.unshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.shared.unmerged , aes(x=log((end-strt)/1000), color="nonAFR.shared.unmerged", fill="nonAFR.shared.unmerged"), size=4, alpha=0.2) +
   coord_cartesian(xlim=c(3.4,7), ylim=c(0,4.1), expand = c(0)) +
   scale_x_continuous(breaks=seq(3.5,7,by = 1), labels=seq(3.5,7,by = 1)) +
   ggtitle('Distribution of Segment Lengths') +
@@ -876,7 +1071,7 @@ p1 <-
 #  scale_x_continuous(labels = c('0','1e-3','2e-3','3e-3','4e-3','5e-3')) +
   scale_x_continuous(labels = c('0','2.5e-4','5e-4','7.5e-4','1e-3')) +
   scale_fill_brewer(type = 'qual', palette = 'Dark2') +
-  ggtitle('Frequency of AFR Segment in nonAFR Population') +
+  ggtitle('Frequency of AFR Segment in Non-Africans') +
   xlab('Frequency') +
   plot.theme
 ############
@@ -986,8 +1181,9 @@ p3 <-
   scale_x_discrete(limits=c('Below 10%', 'Above 10%'), labels=c('Below 10%', 'Above 10%')) +
   scale_y_continuous(breaks = seq(0,1,0.2), labels= seq(0,1,0.2)) +
   coord_cartesian(ylim=c(0.045,1.05),expand = TRUE) +
-  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
-  ggtitle('Frequency of African Segments in African Population\n') +
+  scale_fill_manual(values=c('Below 10%'='dodgerblue4','Above 10%'='orange3')) +
+#  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  ggtitle('Frequency of African Segments in Africans\n') +
   xlab('\nFrequency') +
   ylab('Proportion of Total Calls\n') +
   plot.theme
@@ -1051,30 +1247,69 @@ p3 <-
 #   ggtitle('YRI calls, shared and unshared, SFS') +
 #   theme()
 ####################
-  
 
 p4 <- 
   ggplot() +
   theme_classic() +
-  geom_bar(data = data.table(c('EUR_AFR_Shared', 'EAS_AFR_Shared'), 
-                             c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000) %>% as.numeric(), 
-                               EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(len)/1000000) %>% as.numeric() )
-                             ) %>% 
+  geom_bar(data = data.table(c('ASN_EUR.total.ratio', 'ASN_EUR.minusAFR.ratio'), 
+                             c(ASN_EUR.total.ratio, ASN_EUR.minusAFR.ratio)) %>% 
+                  setnames(c('category','ratio')),
+           aes(x=category, y=ratio, fill=category), stat = "identity", width=0.5 ) +
+  geom_hline(yintercept = 1, linetype='dashed', size = 2) +
+  scale_x_discrete(limits=c('ASN_EUR.total.ratio', 'ASN_EUR.minusAFR.ratio'), labels=c('Unmaksed', 'Masked')) +
+  scale_y_continuous(breaks = seq(0,1.5,by = 0.2), labels=seq(0,1.5,by = 0.2)) +
+  coord_cartesian(ylim=c(0.06,1.4), expand = TRUE) +
+  scale_fill_manual(values=c('ASN_EUR.total.ratio'='dodgerblue4', 'ASN_EUR.minusAFR.ratio'='orange3')) +
+  ggtitle('Masking African Sequence\n') +
+  xlab('\nCategory') +
+  ylab('Ratio of Called Sequence\n') +
+  plot.theme 
+
+
+
+p5 <- 
+  ggplot() +
+  theme_classic() +
+  geom_bar(data = data.table(c('EUR_AFR_Shared', 'EAS_AFR_Shared'),
+                             c(EUR_AFRshared.notEAS %>% mutate(len=as.numeric(end-strt)) %>% summarise(sum(len)/1000000)/nonAFR_AFRshared %>% as.numeric(),
+                               EAS_AFRshared.notEUR %>%  mutate(len=as.numeric(end-strt)) %>% summarise(sum(len)/1000000)/nonAFR_AFRshared %>% as.numeric() )
+                            # c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000)/(EUR.total.sum/1000000) %>% as.numeric(),
+                            #   EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000)/(ASN.total.sum/1000000) %>% as.numeric())
+                            # c(EUR_AFRshared.notEAS/EUR_AFRshared.total,
+                            #   EAS_AFRshared.notEUR/EAS_AFRshared.total)
+                             ) %>%
                   setnames(c('category','sum_Mb')),
            aes(x=category, y=sum_Mb, fill=category), stat = "identity", width=0.5 ) +
-  scale_x_discrete(limits=c('EAS_AFR_Shared', 'EUR_AFR_Shared'), labels=c('EAS_AFR', 'EUR_AFR')) +
-#  scale_y_continuous(breaks = seq(0,12,2), labels= seq(0,12,2)) +
-#  coord_cartesian(ylim=c(0,13)) +
-  scale_fill_brewer(type = 'qual', palette = 'Dark2', direction = -1) +
+  scale_x_discrete(limits=c('EAS_AFR_Shared', 'EUR_AFR_Shared'), labels=c('EAS and AFR', 'EUR and AFR')) +
+#  scale_y_continuous(limits = seq(0,0.1,by = 0.025), labels=seq(0,0.1,by = 0.025)) +
+  coord_cartesian(ylim=c(0.0045,0.1)) +
+  scale_fill_manual(values=c('EAS_AFR_Shared'='dodgerblue4', 'EUR_AFR_Shared'='orange3')) +
   ggtitle('Amount of Exclusively Shared Sequence\n') +
-  coord_cartesian(ylim=c(50,1050), expand=TRUE) +
+  # coord_cartesian(ylim=c(50,1050), expand=TRUE) +
   xlab('\nPaired Populations') +
-  ylab('Shared Sequence (Mb)\n') +
+  ylab('Proportion of Shared Sequence\n') +
   plot.theme
-  
 
 #############
-  
+
+# ggplot() +
+# theme_classic() +
+# geom_bar(data = data.table(c('EUR_AFR_Shared', 'EAS_AFR_Shared'), 
+#                            c(EUR_AFRshared.notEAS %>% mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000)/nonAFR_AFRshared %>% as.numeric(), 
+#                              EAS_AFRshared.notEUR %>%  mutate(len=end-strt) %>% summarise(sum(as.numeric(len))/1000000)/nonAFR_AFRshared %>% as.numeric())
+#                            ) %>% 
+#                 setnames(c('category','sum_Mb')),
+#          aes(x=category, y=sum_Mb, fill=category), stat = "identity", width=0.5 ) +
+# scale_x_discrete(limits=c('EAS_AFR_Shared', 'EUR_AFR_Shared'), labels=c('EAS and AFR', 'EUR and AFR')) +
+# scale_fill_manual(values=c('EAS_AFR_Shared'='dodgerblue4', 'EUR_AFR_Shared'='orange3')) +
+# coord_cartesian(ylim=c(0.0045,0.1)) +
+# #  scale_fill_brewer(type = 'qual', palette = 'Dark2', direction = -1) +
+# ggtitle('Amount of Exclusively Shared Sequence\n') +
+# xlab('\nPaired Populations') +
+# ylab('Proportion of Shared Sequence\n') +
+# plot.theme
+
+
 #   ggplot() + 
 #   theme_bw() +
 #   geom_density(data=EUR_AFRshared.notEAS, aes(x=count/nrow(EUR_AFRshared.notEAS), fill="EUR_AFRshared.notEAS", y=..count..), size=1, alpha=0.75) + 
@@ -1091,13 +1326,14 @@ p4 <-
 ###############
   
 print('generate graph')
-# pdf("SimulatedSegments_LengthAndSFS.pdf", width = 30, height = 9)
-#pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0_SegLengthSFS.pdf", width = 40, height = 9)
-#pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005_SegLengthSFS.pdf", width = 40, height = 9)
-pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/n1_0.1_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005_SegLengthSFS.pdf", width = 40, height = 9)
+pdf("~/Desktop/SimulatedSegments_LengthAndSFS.pdf", width = 40, height = 9)
+#pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0_SegLengthSFS.pdf", width = 40, height = 9)
+#pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.00005_SegLengthSFS.pdf", width = 40, height = 9)
+pdf("~/Documents/Dropbox/AkeyLab/Writing/IBDadmix_102018/Figures/n1_0.05_mAfB_0.0_mBAf_0.0_mAfEu_0.0_mEuAf_0.0005_SegLengthSFS.pdf", width = 55, height = 9)
 #grid.arrange(p1, p3, ncol=2)
+#grid.arrange(p_0.001.a, p3, p4, p_0.001.b, ncol=4)
 grid.arrange(p_0.001.a, p3, p4, ncol=3)
-#grid.arrange(p_0.001.a, p1, p3, p4, ncol=4)
+grid.arrange(p_0.001.a, p3, p4, p5, ncol=4)
 dev.off()
 
 
@@ -1133,13 +1369,13 @@ e.EAS.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases
   dirpath <- i
   setwd(dirpath)
 # Count of segments that overlap
-s.AFR.EURshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.AFR.D4E0.002.ALL.30kb.bed  IntroSeg.EUR.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
+s.AFR.EURshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.AFR.D4E0.002.ALL.50kb.bed  IntroSeg.EUR.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
 
-s.AFR.EASshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.AFR.D4E0.002.ALL.30kb.bed IntroSeg.ASN.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
+s.AFR.EASshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.AFR.D4E0.002.ALL.50kb.bed IntroSeg.ASN.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
 
-s.EUR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.EUR.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
+s.EUR.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.EUR.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
 
-s.EAS.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.ASN.D4E0.002.ALL.30kb.bed IntroSeg.AFR.D4E0.002.ALL.30kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
+s.EAS.AFRshared.unmerged.count <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --count IntroSeg.ASN.D4E0.002.ALL.50kb.bed IntroSeg.AFR.D4E0.002.ALL.50kb.bed', col.names = c('chr','strt','end','bases','count')) %>% filter(count>=0)
 
 
   ggplot() +

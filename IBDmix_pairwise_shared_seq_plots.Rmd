@@ -1,0 +1,228 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "7/24/2019"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+
+```
+
+
+```{r Size distribution of pairwise-shared haplotypes in Emprical Data}
+
+dirs <- list.dirs('~/DATALab/NeanderthalSeq/IBDmix')
+
+#for(i in dirs[2:5]){
+#  print(i)
+  i <-  "/Users/abwolf/DATALab/NeanderthalSeq/IBDmix/Altai.2013.p_SingleArchaic.final_callset/" 
+  i <-  "/Users/abwolf/DATALab/NeanderthalSeq/IBDmix/" 
+  dirpath <- i
+  setwd(dirpath)
+
+
+AFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator AFRcalls.bed EUR_EAS_SAS_AMR_calls.bed.merged', col.names = c('chr','strt','end', 'ID' ,'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+AFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator AFRcalls.bed EUR_EAS_SAS_AMR_calls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+
+AFR.total.unmerged <- fread('AFRcalls.bed', col.names = c('chr','strt','end','ID', 'pop','anc'))
+
+####
+# nonAFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+
+nonAFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EUR_EAScalls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EUR_EAScalls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+
+nonAFR.total.unmerged <- fread('EUR_EAS_SAS_AMR_calls.bed', col.names = c('chr','strt','end','ID', 'pop','anc'))
+
+
+####
+AFR.EURshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator AFRcalls.bed EURcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+EUR.AFRshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EURcalls.bed AFRcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+AFR.EASshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator AFRcalls.bed EAScalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+EAS.AFRshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EAScalls.bed AFRcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+ 
+EUR.EASshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EURcalls.bed EAScalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+EAS.EURshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --bp-ovr 1 --indicator EAScalls.bed EURcalls.bed', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+ 
+
+# 
+# #####
+# SAN.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator SANcalls.bed EUR_EAS_SAS_AMR_calls.bed.merged', col.names = c('chr','strt','end', 'ID' ,'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# SAN.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator SANcalls.bed EUR_EAS_SAS_AMR_calls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+# 
+# nonSAN.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed SANcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# nonSAN.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed SANcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+#####
+
+# #####
+# AFR.EURshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator YRIcalls.bed EURcalls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# EUR.EASshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EURcalls.bed EAScalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# AFR.EUR_EASshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator YRIcalls.bed EUR_EAScalls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+
+
+# ######################
+# AFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator AFRcalls.bed EUR_EAS_SAS_AMR_calls.bed.merged', col.names = c('chr','strt','end', 'ID' ,'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# AFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator AFRcalls.bed EUR_EAS_SAS_AMR_calls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+# 
+# ####
+# nonAFR.shared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# nonAFR.unshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EUR_EAS_SAS_AMR_calls.bed AFRcalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==0)
+# 
+# ####
+# AFR.EURshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator AFRcalls.bed EURcalls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# EUR.EASshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator EURcalls.bed EAScalls.bed.merged', col.names = c('chr','strt','end','ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# 
+# AFR.EUR_EASshared.unmerged <- fread('bedmap --ec --delim "\t" --echo --bases --fraction-map 0.001 --indicator AFRcalls.bed EUR_EAScalls.bed.merged', col.names = c('chr','strt','end', 'ID', 'pop','anc','bases','indicator')) %>% filter(indicator==1)
+# ######################
+
+
+plot.theme <-theme(
+        #legend.position="none"m
+        legend.text=element_text(size=18),
+        #panel.grid.major=element_line(color="black"),
+        panel.grid=element_blank(),
+        axis.line.x=element_line(color="black", size=2),
+        axis.line.y=element_line(color="black",size=2),
+        plot.title=element_text(face="bold", color="black", size=42, hjust = 0.5, family = "Helvetica"),
+        axis.text=element_text(face="bold", color="black", size=42, family = "Helvetica"),
+        axis.title=element_text(face="bold", color="black", size=42, family = "Helvetica")
+        )
+
+
+p_size_dist.a <- 
+  ggplot() + 
+  theme_classic() +
+  geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = AFR.total.unmerged, aes(x=log((end-strt)/1000), color="AFR.total.unmerged", fill="AFR.total.unmerged"), size=4, alpha=0.2) +
+  coord_cartesian(xlim=c(3.97,7), ylim=c(0,2.2), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  ggtitle('Distribution of Segment Lengths\n') +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  xlab('\nSegment Length ( ln(kb) )') +
+  ylab('density\n') +
+  plot.theme
+
+
+p_size_dist.b <- 
+  ggplot() + 
+  theme_classic() +
+  geom_density(data = AFR.EURshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.EURshared.unmerged", fill="AFR.EURshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = EUR.AFRshared.unmerged, aes(x=log((end-strt)/1000), color="EUR.AFRshared.unmerged", fill="EUR.AFRshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
+  #coord_cartesian(xlim=c(3.97,7), ylim=c(0,2.2), expand = FALSE) +
+  coord_cartesian(xlim=c(3.0,7), ylim=c(0,1.5), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  ggtitle('Distribution of Segment Lengths\n') +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  xlab('\nSegment Length ( ln(kb) )') +
+  ylab('density\n') +
+  plot.theme
+
+
+p_size_dist.c <- 
+  ggplot() + 
+  theme_classic() +
+  geom_density(data = AFR.EASshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.EASshared.unmerged", fill="AFR.EASshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = EAS.AFRshared.unmerged, aes(x=log((end-strt)/1000), color="EAS.AFRshared.unmerged", fill="EAS.AFRshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
+#  coord_cartesian(xlim=c(3.97,7), ylim=c(0,2.2), expand = FALSE) +
+  coord_cartesian(xlim=c(3.0,7), ylim=c(0,1.5), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  ggtitle('Distribution of Segment Lengths\n') +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  xlab('\nSegment Length ( ln(kb) )') +
+  ylab('density\n') +
+  plot.theme
+
+
+p_size_dist.d <- 
+  ggplot() + 
+  theme_classic() +
+  geom_density(data = EUR.EASshared.unmerged, aes(x=log((end-strt)/1000), color="EUR.EASshared.unmerged", fill="EUR.EASshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = EAS.EURshared.unmerged, aes(x=log((end-strt)/1000), color="EAS.EURshared.unmerged", fill="EAS.EURshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
+#  coord_cartesian(xlim=c(3.97,7), ylim=c(0,2.2), expand = FALSE) +
+  coord_cartesian(xlim=c(3.0,7), ylim=c(0,1.5), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  ggtitle('Distribution of Segment Lengths\n') +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  xlab('\nSegment Length ( ln(kb) )') +
+  ylab('density\n') +
+  plot.theme
+
+
+p_size_dist.e <-
+  ggplot() + 
+  theme_classic() +
+  geom_density(data = nonAFR.total.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.total.unmerged", fill="nonAFR.total.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = AFR.total.unmerged, aes(x=log((end-strt)/1000), color="AFR.total.unmerged", fill="AFR.total.unmerged"), size=4, alpha=0.2) +
+  coord_cartesian(xlim=c(3.97,7), ylim=c(0,2.2), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  ggtitle('Distribution of Segment Lengths\n') +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  xlab('\nSegment Length ( ln(kb) )') +
+  ylab('density\n') +
+  plot.theme
+
+
+p_size_dist.f <-
+  ggplot() + 
+  theme_classic() +
+  geom_density(data = AFR.shared.unmerged, aes(x=log((end-strt)/1000), color="AFR.shared.unmerged", fill="AFR.shared.unmerged"), size=4, alpha=0.2) +
+  #geom_density(data = AFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="AFR.unshared.unmerged", fill="AFR.unshared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.shared.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.shared.unmerged", fill="nonAFR.shared.unmerged"), size=4, alpha=0.2) +
+  geom_density(data = nonAFR.unshared.unmerged, aes(x=log((end-strt)/1000), color="nonAFR.unshared.unmerged", fill="nonAFR.unshared.unmerged"), size=4, alpha=0.2) +
+#  coord_cartesian(xlim=c(3.97,7), ylim=c(0,2.2), expand = FALSE) +
+  coord_cartesian(xlim=c(3.0,7), ylim=c(0,1.5), expand = FALSE) +
+  scale_x_continuous(breaks=seq(4,7,by = 1), labels=seq(4,7,by = 1)) +
+  ggtitle('Distribution of Segment Lengths\n') +
+  scale_color_brewer(type = 'qual', palette = 'Dark2') +
+  scale_fill_brewer(type = 'qual', palette = 'Dark2') +
+  xlab('\nSegment Length ( ln(kb) )') +
+  ylab('density\n') +
+  plot.theme
+
+grid.arrange(p_size_dist.e, p_size_dist.f, ncol=2)
+  
+median(nonAFR.unshared.unmerged$end-nonAFR.unshared.unmerged$strt)/1000
+  
+median(nonAFR.shared.unmerged$end-nonAFR.shared.unmerged$strt)/1000
+  
+t.test(x = (nonAFR.shared.unmerged$end-nonAFR.shared.unmerged$strt), y = (nonAFR.unshared.unmerged$end-nonAFR.unshared.unmerged$strt))
+
+wilcox.test(x = (nonAFR.shared.unmerged$end-nonAFR.shared.unmerged$strt), y = (nonAFR.unshared.unmerged$end-nonAFR.unshared.unmerged$strt))
+
+grid.arrange(p_size_dist.b, p_size_dist.c, p_size_dist.d, ncol=3)
+```
+
