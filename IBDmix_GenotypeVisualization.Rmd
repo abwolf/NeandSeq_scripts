@@ -38,12 +38,14 @@ calls[, ID.mod := .GRP, by = 'ID']
 ```
 
 
-```{r Genotype Data}
+```{r Load Genotype Data and Pop Data and Carrier Data}
 
 col_names <- c('chr','pos','anc_allele','der_allele','Altai',seq(from=1,to = 2504, by = 1))
 
 fname <- paste0('~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/','Altai_1KGP3_chr17_36Mb.txt')
 fname <- paste0('~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/','Altai_1KGP3_chr12_89Mb.txt')
+fname <- paste0('~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/','Altai_1KGP3_chr1_24415000_24715000.txt')
+fname <- paste0('~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/','Altai_1KGP3_chr1_24360000_24970000.txt')
 
 Altai_1kG.derived_recode = fread(fname, select = seq(from=1, to = 2509), fill=TRUE, col.names = col_names) 
                           #, colClasses = c('numeric','numeric','character','character',rep('numeric',times = 2505))
@@ -51,27 +53,51 @@ Altai_1kG.derived_recode = fread(fname, select = seq(from=1, to = 2509), fill=TR
 popfile <- fread('~/DATALab/NeanderthalSeq/IBDmix/1KGP.P3.SampleInfo.txt', 
                  col.names = c('vcf_ID','1kG_ID','Pop','anc','Pop_num','Gender','X_ID'), 
                  colClasses = c(rep('character',7))) %>%
-            rbind(list('Altai',NA,'Altai','Neand',NA,NA,NA)) %>%
+            rbind(list('Altai','Altai','Altai','Neand',NA,NA,NA)) %>%
             filter(!Pop %in% c('ACB','ASW')) %>% as.data.table()
+            as.data.table()
+  
+# #color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+# 
+# 
+# # Define ancestry levels and order
+# #ancestry.levels <- c('Neand','AFR','EUR','EAS','SAS','AMR')
+# ancestry.levels <- c('Neand','AFR','EUR','EAS')
+# #ancestry.levels <- c('Neand','AFR','EUR')
+# 
+# 
+# # sample 1kG data
+# c <- 12
+# st <- 89157220
+# ed <- 89259766
+# 
+# Altai_1kG_sample <- Altai_1kG.derived_recode %>% filter(pos > st-10000 & pos < ed+10000)
+# 
+# dt.carrier <- filter(popfile, `1kG_ID` %in% filter(calls, chr==c, start>=st, end<=ed)$ID) %>% mutate(carrier=1)
+  
+# Neand carrier status and EUR ancestry carrier for AFR samples, calculated from RFMix
 
-#color.values <- c('EUR' = 'orange3','EAS'='green4','SAS'='cyan3', 'AFR'='mediumpurple4', 'AMR'='plum','YRI'='dodgerblue1')
+cname <- paste0('~/DATALab//NeanderthalSeq/IBDmix/RFMixtest/EAS_EUR_AFR/overlap_genotype_plots/',
+                  'chr1_24415000_24715000')
+
+dt.neand_carrier <- fread(
+        paste0(cname, '.neand_carriers'),
+        col.names = c('ID_chr','strt.neand','end.neand','anc'),
+        fill = TRUE) %>% separate(ID_chr, into = c('1kG_ID','neand.carrier'), sep = '_', remove = FALSE) %>%
+        rbind(data.table('ID_chr'='Altai','strt.neand'=NA,'end.neand'=NA,'anc'='Neand','1kG_ID'='Altai','neand.carrier'=1))
 
 
-# Define ancestry levels and order
-#ancestry.levels <- c('Neand','AFR','EUR','EAS','SAS','AMR')
-ancestry.levels <- c('Neand','AFR','EUR','EAS')
-#ancestry.levels <- c('Neand','AFR','EUR')
+dt.anc_carrier <- fread(
+        paste0(cname,'.anc_carriers'),
+        col.names = c('ID_chr','strt.anc','end.anc','rfmix.anc'),
+        fill = TRUE) %>% separate(ID_chr, into = c('1kG_ID','anc.carrier'), sep = '_', remove = FALSE)
 
 
-# sample 1kG data
-c <- 12
-st <- 89157220
-ed <- 89259766
+```
 
-Altai_1kG_sample <- Altai_1kG.derived_recode %>% filter(pos > st-10000 & pos < ed+10000)
 
-dt.carrier <- filter(popfile, `1kG_ID` %in% filter(calls, chr==c, start>=st, end<=ed)$ID) %>% mutate(carrier=1)
 
+```{r Transpose genotype data combine with carrier data and write .geno file}
 ##########
 # #Calculate 'Genetic Score' for each sample and order based on genetic distance to Altai
 # dt.derived_score <- Altai_1kG_sample %>% 
@@ -86,27 +112,57 @@ dt.carrier <- filter(popfile, `1kG_ID` %in% filter(calls, chr==c, start>=st, end
 ############
 ##############
 # Calculate Genetic distance between samples, and create ranking order for clustering
-Altai_1kG_derived_recode.transposed <- Altai_1kG_sample %>% 
+# Altai_1kG_derived_recode.transposed <- Altai_1kG_sample %>% 
+#                                       select(-c('chr','pos','anc_allele','der_allele')) %>%
+#                                       t() %>% as.data.table(keep.rownames = 'vcf_ID') %>% setnames(c('vcf_ID',Altai_1kG_sample$pos)) %>%
+#                                       left_join(select(popfile,c('vcf_ID','anc')),by=c('vcf_ID')) %>%
+#                                       left_join(select(dt.carrier,c('vcf_ID','carrier')), by=c('vcf_ID')) %>% mutate(carrier=ifelse(is.na(carrier),0,1)) %>%
+#                                       filter(anc %in% c('Neand','AFR','EUR','EAS')) %>%
+#                                       #select(-c('anc','carrier'))
+#                                       select(vcf_ID,anc,carrier,everything()) %>%
+#                                       as.data.table()
+# 
+# Altai_1kG_derived_recode.transposed.vcf_carrier <- Altai_1kG_derived_recode.transposed %>% 
+#                                                   select(vcf_ID,carrier) %>%
+#                                                   as.data.frame(row.names = Altai_1kG_derived_recode.transposed$vcf_ID) %>%
+#                                                   select(-vcf_ID)
+# 
+# Altai_1kG_derived_recode.transposed.vcf_carrier <- Altai_1kG_derived_recode.transposed %>% 
+#                                                   select(vcf_ID,carrier)
+# 
+# write.table(x = Altai_1kG_derived_recode.transposed, 
+#             file = '~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/Altai_1KGP3_chr12_89Mb.geno', 
+#             quote = FALSE, sep = '\t',row.names = FALSE, col.names = TRUE)
+###########
+
+# Calculate Genetic distance between samples, and create ranking order for clustering
+Altai_1kG_derived_recode.transposed <- Altai_1kG.derived_recode %>% 
                                       select(-c('chr','pos','anc_allele','der_allele')) %>%
-                                      t() %>% as.data.table(keep.rownames = 'vcf_ID') %>% setnames(c('vcf_ID',Altai_1kG_sample$pos)) %>%
-                                      left_join(select(popfile,c('vcf_ID','anc')),by=c('vcf_ID')) %>%
-                                      left_join(select(dt.carrier,c('vcf_ID','carrier')), by=c('vcf_ID')) %>% mutate(carrier=ifelse(is.na(carrier),0,1)) %>%
-                                      filter(anc %in% c('Neand','AFR','EUR','EAS')) %>%
+                                      t() %>% as.data.table(keep.rownames = 'vcf_ID') %>% setnames(c('vcf_ID',Altai_1kG.derived_recode$pos)) %>%
+                                      left_join(select(popfile,c('vcf_ID','1kG_ID','anc')),by=c('vcf_ID')) %>% 
+  
+                                      left_join(select(dt.neand_carrier,c('1kG_ID','neand.carrier')), by=c('1kG_ID')) %>%
+                                      mutate(neand.carrier=ifelse(is.na(neand.carrier),0,1)) %>% 
+  
+  
+                                      left_join(select(dt.anc_carrier,c('1kG_ID','anc.carrier')), by=c('1kG_ID')) %>%
+                                      mutate(anc.carrier=ifelse(is.na(anc.carrier),0,1)) %>%
+                        
+                                      filter(anc %in% c('Neand','EUR','EAS','AFR')) %>%
                                       #select(-c('anc','carrier'))
-                                      select(vcf_ID,anc,carrier,everything()) %>%
+                                      select('1kG_ID',anc.carrier,neand.carrier,everything()) %>%
                                       as.data.table()
 
-Altai_1kG_derived_recode.transposed.vcf_carrier <- Altai_1kG_derived_recode.transposed %>% 
-                                                  select(vcf_ID,carrier) %>%
-                                                  as.data.frame(row.names = Altai_1kG_derived_recode.transposed$vcf_ID) %>%
-                                                  select(-vcf_ID)
-
-Altai_1kG_derived_recode.transposed.vcf_carrier <- Altai_1kG_derived_recode.transposed %>% 
-                                                  select(vcf_ID,carrier)
-
 write.table(x = Altai_1kG_derived_recode.transposed, 
-            file = '~/DATALab/NeanderthalSeq/IBDmix/Altai_1kG_genotypes/Altai_1KGP3_chr12_89Mb.geno', 
+            file = paste0(cname,'.geno.extended'), 
             quote = FALSE, sep = '\t',row.names = FALSE, col.names = TRUE)
+
+
+
+```
+
+```{r Calculate pairwise distance}
+###################
 
 Altai_1kG_derived_recode.transposed <- Altai_1kG_derived_recode.transposed %>% as.data.frame(row.names = Altai_1kG_derived_recode.transposed$vcf_ID) %>% select(-vcf_ID)
 

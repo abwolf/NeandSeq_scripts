@@ -1,0 +1,655 @@
+---
+title: "IBDmix_Filter_by_cM.MappingFDR"
+author: "Aaron Wolf"
+date: "5/11/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+library(R.utils)
+
+```
+
+```{r Functions}
+
+
+# FDR.fn <- function(dt){
+#   FDR_seg <- (dt[indicator==0] %>% nrow()) / ( dt[indicator==0] %>% nrow() + dt[indicator==1] %>% nrow() )
+#   FDR_bp <- (dt[indicator==0] %>% summarise(sum(bp_len/1000000))) / ( dt[indicator==0] %>% summarise(sum(bp_len/1000000)) + dt[indicator==1] %>% summarise(sum(bp_overlap/1000000)) )
+# return(data.table(FDR_seg,FDR_bp))
+# }
+# 
+# 
+# TPR.fn <- function(dt, map){
+#   indicator <- paste0(map,'_indicator')
+#   bp_overlap <- paste0(map,'_bp_overlap')
+#   TPR_seg <- ( dt[get(indicator)==1] %>% nrow() ) / ( dt[get(indicator)==0] %>% nrow() + dt[get(indicator)==1] %>% nrow() )
+#   TPR_bp <- ( dt[get(indicator)==1] %>% summarise(sum(get(bp_overlap)/1000000)) ) /
+#                    ( (dt[get(indicator)==1] %>% summarise(sum(get(bp_overlap)/1000000)))  +
+#                        (dt[get(indicator)==1] %>% summarise(sum((bp_len-get(bp_overlap))/1000000))) +
+#                        (dt[get(indicator)==0] %>% summarise(sum(bp_len/1000000)))
+#                    )
+# 
+#   return(data.table(TPR_seg, TPR_bp))
+# }
+# 
+# 
+# Load_original.fn <- function(pop_original){
+#   setwd(paste0('~/OLDAKEYLab/tcomi/ibdmix_altai_2013_all_maps/gen_dist/',pop_original))
+#   dname <- paste0('map_',pop_original,'_altai_1kg_',pop_original,'_ALL.LOD4.0.05cM.bed')
+#   data <- fread(dname, col.names = c('ID', 'strt','end','cM_len','bp_len','LOD'))
+#   return(data)
+# }
+# 
+# 
+# Load_map.fn <- function(pop_original, pop_map){
+#   setwd(paste0('~/OLDAKEYLab/tcomi/ibdmix_altai_2013_all_maps/gen_dist/BEB/',pop_original))
+#   oname <- paste0('map_',pop_original,'_altai_1kg_',pop_original,'_ALL.LOD4.0.05cM.bed')
+#   mname <- paste0('map_',pop_map,'_altai_1kg_',pop_original,'_ALL.LOD4.0.05cM.bed')
+#   command <- paste('bedmap --ec --delim "\t" --echo --indicator --bases',mname,oname,sep = ' ')
+#   
+#   mdata <- fread(cmd = command, col.names = c('ID', 'strt','end','cM_len','bp_len','LOD'))
+# }
+```
+
+
+
+```{r FDR TPR against other maps}
+
+FDR_TPR.dt <- fread('~/OLDAKEYLab/abwolf/FDR_TPR.txt', col.names = c('pop','map','mb_ind','segs','fdr','fdr_bp','tpr','tpr_bp'))
+
+FDR_TPR.dt$pop <- factor(FDR_TPR.dt$pop, levels = unique(arrange(FDR_TPR.dt,pop)$pop))
+
+EAS <-c('CHB','CHS','JPT','KHV','CDX')
+EUR <- c('CEU','IBS','TSI','FIN','GBR')
+AFR <- c('YRI','LWK','GWD','MSL','ESN')
+ACB_ASW <- c('ACB','ASW')
+AMR <- c('PUR','MXL','CLM','PEL')
+SAS <- c('GIH','BEB','PJL','STU','ITU')
+
+FDR_TPR.dt[pop %in% EAS,pop_1kg:=as.factor('EAS')]
+FDR_TPR.dt[pop %in% EUR,pop_1kg:=as.factor('EUR')]
+FDR_TPR.dt[pop %in% AFR,pop_1kg:=as.factor('AFR')]
+FDR_TPR.dt[pop %in% ACB_ASW,pop_1kg:=as.factor('ACB_ASW')]
+FDR_TPR.dt[pop %in% AMR,pop_1kg:=as.factor('AMR')]
+FDR_TPR.dt[pop %in% SAS,pop_1kg:=as.factor('SAS')]
+
+FDR_TPR.dt[map %in% EAS,map_1kg:=as.factor('EAS')]
+FDR_TPR.dt[map %in% EUR,map_1kg:=as.factor('EUR')]
+FDR_TPR.dt[map %in% AFR,map_1kg:=as.factor('AFR')]
+FDR_TPR.dt[map %in% ACB_ASW,map_1kg:=as.factor('ACB_ASW')]
+FDR_TPR.dt[map %in% AMR,map_1kg:=as.factor('AMR')]
+FDR_TPR.dt[map %in% SAS,map_1kg:=as.factor('SAS')]
+
+
+v <- as.vector(arrange(FDR_TPR.dt[pop==map],desc(mb_ind))$pop)
+
+#v <- c(rep('SAS',5), rep('EAS',5),rep('ERU',5),rep('ARM',4),rep('AFR',5), rep('ACB_ASW',2))
+
+color.values <- c('EUR' = 'dodgerblue1', 'EAS' = 'orange3', 'SAS' = 'green3', 'AMR' = 'mediumpurple3', 'ACB_ASW' = 'tomato1', 'AFR' = 'red4')
+
+
+fdr_range.dt <- FDR_TPR.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(fdr_bp), pct_0 = quantile(fdr_bp,0), pct_1 = quantile(fdr_bp,1)) %>% 
+                  as.data.table()
+
+tpr_range.dt <- FDR_TPR.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(tpr), pct_0 = quantile(tpr,0), pct_1 = quantile(tpr,1)) %>% 
+                  as.data.table()
+
+mb_range.dt <- FDR_TPR.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(pct_0 = quantile(mb_ind,0), pct_1 = quantile(mb_ind,1)) %>% 
+                  as.data.table()
+
+
+thm <- theme(
+    axis.text = element_text(face='bold'),
+    axis.title = element_text(face='bold'),
+    legend.text = element_text(face='bold')
+  )
+
+
+p.mb_ind.violin <- ggplot() + theme_classic() +
+  geom_violin(data = FDR_TPR.dt[map!='hapmap'], aes(x=pop,y = mb_ind, fill=pop_1kg)) +
+  geom_point(data = FDR_TPR.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind), color='black',size=2) +
+  scale_x_discrete(breaks=FDR_TPR.dt[map!='hapmap']$pop, limits=v) +
+  scale_y_continuous(breaks = seq(0,60,5)) +
+  coord_cartesian(ylim=c(0,60), expand = FALSE) +
+  scale_fill_manual(values = color.values) +
+  thm
+
+# p.mb_ind.dot <- ggplot(data = FDR_TPR.dt) + theme_classic() +
+#   geom_point(aes(x=map,y = mb_ind, color=map),size = 2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt$map, limits=v) +
+#   facet_wrap(.~pop, scales = 'free_x') +
+#   thm
+
+
+# p.fdr <- ggplot() + theme_classic() +
+#   geom_violin(data = FDR_TPR.dt[map!='hapmap' & pop!=map], aes(x=pop,y = fdr, fill=pop_1kg)) +
+#   #geom_point(data = FDR_TPR.dt[map!='hapmap' & pop==map], aes(x=pop, y=fdr), color='black',size=2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt[map!='hapmap' & pop!=map]$pop, limits=v) +
+#   scale_y_continuous(breaks = seq(0.0,0.75,0.05)) +
+#   #coord_cartesian(ylim=c(0,1), expand = TRUE) +
+#   scale_fill_manual(values = color.values) +
+#   thm
+
+
+p.fdr_by_map <- ggplot(fdr_range.dt) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('fdr')+
+  xlab('Map 1kg population') +
+  thm
+
+
+p.tpr_by_map <- ggplot(tpr_range.dt) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('tpr')+
+  xlab('Map 1kg population') +
+  thm
+
+p.mb_by_map <- ggplot() + theme_classic() +
+  geom_point(data = FDR_TPR.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind, color=pop), size=3) +
+  geom_errorbar(data=mb_range.dt,aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('mb_ind')+
+  xlab('Map 1kg population') +
+  thm
+
+
+
+```
+
+
+```{r FDR TPR against 50kb calls}
+
+FDR_TPR_50kb.dt <- fread('~/OLDAKEYLab/abwolf/FDR_TPR_50kb.txt', col.names = c('pop','map','mb_ind','segs','fdr','fdr_bp','tpr','tpr_bp','mb_ind_50kb','segs_50kb'))
+
+FDR_TPR_50kb.dt$pop <- factor(FDR_TPR_50kb.dt$pop, levels = unique(arrange(FDR_TPR_50kb.dt,pop)$pop))
+
+EAS <-c('CHB','CHS','JPT','KHV','CDX')
+EUR <- c('CEU','IBS','TSI','FIN','GBR')
+AFR <- c('YRI','LWK','GWD','MSL','ESN')
+ACB_ASW <- c('ACB','ASW')
+AMR <- c('PUR','MXL','CLM','PEL')
+SAS <- c('GIH','BEB','PJL','STU','ITU')
+
+FDR_TPR_50kb.dt[pop %in% EAS,pop_1kg:=as.factor('EAS')]
+FDR_TPR_50kb.dt[pop %in% EUR,pop_1kg:=as.factor('EUR')]
+FDR_TPR_50kb.dt[pop %in% AFR,pop_1kg:=as.factor('AFR')]
+FDR_TPR_50kb.dt[pop %in% ACB_ASW,pop_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_50kb.dt[pop %in% AMR,pop_1kg:=as.factor('AMR')]
+FDR_TPR_50kb.dt[pop %in% SAS,pop_1kg:=as.factor('SAS')]
+
+FDR_TPR_50kb.dt[map %in% EAS,map_1kg:=as.factor('EAS')]
+FDR_TPR_50kb.dt[map %in% EUR,map_1kg:=as.factor('EUR')]
+FDR_TPR_50kb.dt[map %in% AFR,map_1kg:=as.factor('AFR')]
+FDR_TPR_50kb.dt[map %in% ACB_ASW,map_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_50kb.dt[map %in% AMR,map_1kg:=as.factor('AMR')]
+FDR_TPR_50kb.dt[map %in% SAS,map_1kg:=as.factor('SAS')]
+
+
+v <- as.vector(arrange(FDR_TPR_50kb.dt[pop==map],desc(mb_ind))$pop)
+
+#v <- c(rep('SAS',5), rep('EAS',5),rep('ERU',5),rep('ARM',4),rep('AFR',5), rep('ACB_ASW',2))
+
+color.values <- c('EUR' = 'dodgerblue1', 'EAS' = 'orange3', 'SAS' = 'green3', 'AMR' = 'mediumpurple3', 'ACB_ASW' = 'tomato1', 'AFR' = 'red4')
+
+
+fdr_range_50kb.dt <- FDR_TPR_50kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  #summarise(median = median(fdr_bp), pct_0 = quantile(fdr_bp,0), pct_1 = quantile(fdr_bp,1)) %>% 
+                  summarise(median = median(fdr), pct_0 = quantile(fdr,0), pct_1 = quantile(fdr,1)) %>% 
+                  as.data.table()
+
+tpr_range_50kb.dt <- FDR_TPR_50kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  #summarise(median = median(tpr_bp), pct_0 = quantile(tpr_bp,0), pct_1 = quantile(tpr_bp,1)) %>% 
+                  summarise(median = median(tpr), pct_0 = quantile(tpr,0), pct_1 = quantile(tpr,1)) %>% 
+                  as.data.table()
+
+mb_range_50kb.dt <- FDR_TPR_50kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(pct_0 = quantile(mb_ind,0), pct_1 = quantile(mb_ind,1)) %>% 
+                  as.data.table()
+
+
+thm <- theme(
+    axis.text = element_text(face='bold'),
+    axis.title = element_text(face='bold'),
+    legend.text = element_text(face='bold')
+  )
+
+
+p.mb_ind.violin <- ggplot() + theme_classic() +
+  geom_violin(data = FDR_TPR_50kb.dt[map!='hapmap'], aes(x=pop,y = mb_ind, fill=pop_1kg)) +
+  geom_point(data = FDR_TPR_50kb.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind), color='black',size=2) +
+  geom_point(data = FDR_TPR_50kb.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind_50kb), color='red',size=2) +
+  scale_x_discrete(breaks=FDR_TPR_50kb.dt[map!='hapmap']$pop, limits=v) +
+  scale_y_continuous(breaks = seq(0,70,5)) +
+  coord_cartesian(ylim=c(0,70), expand = FALSE) +
+  scale_fill_manual(values = color.values) +
+  thm
+
+# p.mb_ind.dot <- ggplot(data = FDR_TPR.dt) + theme_classic() +
+#   geom_point(aes(x=map,y = mb_ind, color=map),size = 2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt$map, limits=v) +
+#   facet_wrap(.~pop, scales = 'free_x') +
+#   thm
+
+
+# p.fdr <- ggplot() + theme_classic() +
+#   geom_violin(data = FDR_TPR.dt[map!='hapmap' & pop!=map], aes(x=pop,y = fdr, fill=pop_1kg)) +
+#   #geom_point(data = FDR_TPR.dt[map!='hapmap' & pop==map], aes(x=pop, y=fdr), color='black',size=2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt[map!='hapmap' & pop!=map]$pop, limits=v) +
+#   scale_y_continuous(breaks = seq(0.0,0.75,0.05)) +
+#   #coord_cartesian(ylim=c(0,1), expand = TRUE) +
+#   scale_fill_manual(values = color.values) +
+#   thm
+
+
+p.fdr_by_map <- ggplot(fdr_range_50kb.dt[ pop %in% c('CHB','IBS','YRI') ]) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('fdr')+
+  xlab('Map 1kg population') +
+  thm
+
+
+p.tpr_by_map <- ggplot(tpr_range_50kb.dt[ pop %in% c('CHB','IBS','YRI') ]) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('tpr')+
+  xlab('Map 1kg population') +
+  thm
+
+p.mb_by_map <- ggplot() + theme_classic() +
+  geom_point(data = FDR_TPR_50kb.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind, color=pop), size=3) +
+  geom_point(data = FDR_TPR_50kb.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind_50kb), size=3) +
+  geom_errorbar(data=mb_range_50kb.dt,aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('mb_ind')+
+  xlab('Map 1kg population') +
+  thm
+
+grid.arrange(p.fdr_by_map, p.tpr_by_map)
+
+```
+
+
+
+```{r FDR TPR against 30kb calls}
+
+FDR_TPR_30kb.dt <- fread('~/OLDAKEYLab/abwolf/FDR_TPR_30kb.txt', col.names = c('pop','map','mb_ind','segs','fdr','fdr_bp','tpr','tpr_bp','mb_ind_30kb','segs_30kb'))
+
+FDR_TPR_30kb.dt$pop <- factor(FDR_TPR_30kb.dt$pop, levels = unique(arrange(FDR_TPR_30kb.dt,pop)$pop))
+
+EAS <-c('CHB','CHS','JPT','KHV','CDX')
+EUR <- c('CEU','IBS','TSI','FIN','GBR')
+AFR <- c('YRI','LWK','GWD','MSL','ESN')
+ACB_ASW <- c('ACB','ASW')
+AMR <- c('PUR','MXL','CLM','PEL')
+SAS <- c('GIH','BEB','PJL','STU','ITU')
+
+FDR_TPR_30kb.dt[pop %in% EAS,pop_1kg:=as.factor('EAS')]
+FDR_TPR_30kb.dt[pop %in% EUR,pop_1kg:=as.factor('EUR')]
+FDR_TPR_30kb.dt[pop %in% AFR,pop_1kg:=as.factor('AFR')]
+FDR_TPR_30kb.dt[pop %in% ACB_ASW,pop_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_30kb.dt[pop %in% AMR,pop_1kg:=as.factor('AMR')]
+FDR_TPR_30kb.dt[pop %in% SAS,pop_1kg:=as.factor('SAS')]
+
+FDR_TPR_30kb.dt[map %in% EAS,map_1kg:=as.factor('EAS')]
+FDR_TPR_30kb.dt[map %in% EUR,map_1kg:=as.factor('EUR')]
+FDR_TPR_30kb.dt[map %in% AFR,map_1kg:=as.factor('AFR')]
+FDR_TPR_30kb.dt[map %in% ACB_ASW,map_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_30kb.dt[map %in% AMR,map_1kg:=as.factor('AMR')]
+FDR_TPR_30kb.dt[map %in% SAS,map_1kg:=as.factor('SAS')]
+
+
+v <- as.vector(arrange(FDR_TPR_30kb.dt[pop==map],desc(mb_ind))$pop)
+
+#v <- c(rep('SAS',5), rep('EAS',5),rep('ERU',5),rep('ARM',4),rep('AFR',5), rep('ACB_ASW',2))
+
+color.values <- c('EUR' = 'dodgerblue1', 'EAS' = 'orange3', 'SAS' = 'green3', 'AMR' = 'mediumpurple3', 'ACB_ASW' = 'tomato1', 'AFR' = 'red4')
+
+
+fdr_range_30kb.dt <- FDR_TPR_30kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(fdr_bp), pct_0 = quantile(fdr_bp,0), pct_1 = quantile(fdr_bp,1)) %>% 
+                  #summarise(median = median(fdr), pct_0 = quantile(fdr,0), pct_1 = quantile(fdr,1)) %>%
+                  as.data.table()
+
+tpr_range_30kb.dt <- FDR_TPR_30kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(tpr_bp), pct_0 = quantile(tpr_bp,0), pct_1 = quantile(tpr_bp,1)) %>% 
+                  #summarise(median = median(tpr), pct_0 = quantile(tpr,0), pct_1 = quantile(tpr,1)) %>%
+                  as.data.table()
+
+mb_range_30kb.dt <- FDR_TPR_30kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(pct_0 = quantile(mb_ind,0), pct_1 = quantile(mb_ind,1)) %>% 
+                  as.data.table()
+
+
+thm <- theme(
+    axis.text = element_text(face='bold'),
+    axis.title = element_text(face='bold'),
+    legend.text = element_text(face='bold')
+  )
+
+
+p.mb_ind.violin <- ggplot() + theme_classic() +
+  geom_violin(data = FDR_TPR_30kb.dt[map!='hapmap'], aes(x=pop,y = mb_ind, fill=pop_1kg)) +
+  geom_point(data = FDR_TPR_30kb.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind), color='black',size=2) +
+  geom_point(data = FDR_TPR_30kb.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind_30kb), color='red',size=2) +
+  scale_x_discrete(breaks=FDR_TPR_30kb.dt[map!='hapmap']$pop, limits=v) +
+  scale_y_continuous(breaks = seq(0,70,5)) +
+  coord_cartesian(ylim=c(0,70), expand = FALSE) +
+  scale_fill_manual(values = color.values) +
+  thm
+
+# p.mb_ind.dot <- ggplot(data = FDR_TPR.dt) + theme_classic() +
+#   geom_point(aes(x=map,y = mb_ind, color=map),size = 2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt$map, limits=v) +
+#   facet_wrap(.~pop, scales = 'free_x') +
+#   thm
+
+
+# p.fdr <- ggplot() + theme_classic() +
+#   geom_violin(data = FDR_TPR.dt[map!='hapmap' & pop!=map], aes(x=pop,y = fdr, fill=pop_1kg)) +
+#   #geom_point(data = FDR_TPR.dt[map!='hapmap' & pop==map], aes(x=pop, y=fdr), color='black',size=2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt[map!='hapmap' & pop!=map]$pop, limits=v) +
+#   scale_y_continuous(breaks = seq(0.0,0.75,0.05)) +
+#   #coord_cartesian(ylim=c(0,1), expand = TRUE) +
+#   scale_fill_manual(values = color.values) +
+#   thm
+
+
+p.fdr_by_map <- ggplot(fdr_range_30kb.dt[ pop %in% c('CHB','IBS','YRI') ]) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('fdr')+
+  xlab('Map 1kg population') +
+  thm
+
+
+p.tpr_by_map <- ggplot(tpr_range_30kb.dt[ pop %in% c('CHB','IBS','YRI') ]) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('tpr')+
+  xlab('Map 1kg population') +
+  thm
+
+p.mb_by_map <- ggplot() + theme_classic() +
+  geom_point(data = FDR_TPR_30kb.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind, color=pop), size=3) +
+  geom_point(data = FDR_TPR_30kb.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind_30kb), size=3) +
+  geom_errorbar(data=mb_range_30kb.dt,aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('mb_ind')+
+  xlab('Map 1kg population') +
+  thm
+
+grid.arrange(p.fdr_by_map, p.tpr_by_map)
+
+```
+
+
+
+```{r FDR TPR against 0kb calls}
+
+FDR_TPR_0kb.dt <- fread('~/OLDAKEYLab/abwolf/FDR_TPR_0kb.txt', col.names = c('pop','map','mb_ind','segs','fdr','fdr_bp','tpr','tpr_bp','mb_ind_0kb','segs_0kb'))
+
+FDR_TPR_0kb.dt$pop <- factor(FDR_TPR_0kb.dt$pop, levels = unique(arrange(FDR_TPR_0kb.dt,pop)$pop))
+
+EAS <-c('CHB','CHS','JPT','KHV','CDX')
+EUR <- c('CEU','IBS','TSI','FIN','GBR')
+AFR <- c('YRI','LWK','GWD','MSL','ESN')
+ACB_ASW <- c('ACB','ASW')
+AMR <- c('PUR','MXL','CLM','PEL')
+SAS <- c('GIH','BEB','PJL','STU','ITU')
+
+FDR_TPR_0kb.dt[pop %in% EAS,pop_1kg:=as.factor('EAS')]
+FDR_TPR_0kb.dt[pop %in% EUR,pop_1kg:=as.factor('EUR')]
+FDR_TPR_0kb.dt[pop %in% AFR,pop_1kg:=as.factor('AFR')]
+FDR_TPR_0kb.dt[pop %in% ACB_ASW,pop_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_0kb.dt[pop %in% AMR,pop_1kg:=as.factor('AMR')]
+FDR_TPR_0kb.dt[pop %in% SAS,pop_1kg:=as.factor('SAS')]
+
+FDR_TPR_0kb.dt[map %in% EAS,map_1kg:=as.factor('EAS')]
+FDR_TPR_0kb.dt[map %in% EUR,map_1kg:=as.factor('EUR')]
+FDR_TPR_0kb.dt[map %in% AFR,map_1kg:=as.factor('AFR')]
+FDR_TPR_0kb.dt[map %in% ACB_ASW,map_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_0kb.dt[map %in% AMR,map_1kg:=as.factor('AMR')]
+FDR_TPR_0kb.dt[map %in% SAS,map_1kg:=as.factor('SAS')]
+
+
+v <- as.vector(arrange(FDR_TPR_0kb.dt[pop==map],desc(mb_ind))$pop)
+
+#v <- c(rep('SAS',5), rep('EAS',5),rep('ERU',5),rep('ARM',4),rep('AFR',5), rep('ACB_ASW',2))
+
+color.values <- c('EUR' = 'dodgerblue1', 'EAS' = 'orange3', 'SAS' = 'green3', 'AMR' = 'mediumpurple3', 'ACB_ASW' = 'tomato1', 'AFR' = 'red4')
+
+
+fdr_range_0kb.dt <- FDR_TPR_0kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(fdr_bp), pct_0 = quantile(fdr_bp,0), pct_1 = quantile(fdr_bp,1)) %>% 
+                  as.data.table()
+
+tpr_range_0kb.dt <- FDR_TPR_0kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(tpr_bp), pct_0 = quantile(tpr_bp,0), pct_1 = quantile(tpr_bp,1)) %>% 
+                  as.data.table()
+
+mb_range_0kb.dt <- FDR_TPR_0kb.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(pct_0 = quantile(mb_ind,0), pct_1 = quantile(mb_ind,1)) %>% 
+                  as.data.table()
+
+
+thm <- theme(
+    axis.text = element_text(face='bold'),
+    axis.title = element_text(face='bold'),
+    legend.text = element_text(face='bold')
+  )
+
+
+p.mb_ind.violin <- ggplot() + theme_classic() +
+  geom_violin(data = FDR_TPR_0kb.dt[map!='hapmap'], aes(x=pop,y = mb_ind, fill=pop_1kg)) +
+  geom_point(data = FDR_TPR_0kb.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind), color='black',size=2) +
+  geom_point(data = FDR_TPR_0kb.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind_0kb), color='red',size=2) +
+  scale_x_discrete(breaks=FDR_TPR_0kb.dt[map!='hapmap']$pop, limits=v) +
+  scale_y_continuous(breaks = seq(0,70,5)) +
+  coord_cartesian(ylim=c(0,70), expand = FALSE) +
+  scale_fill_manual(values = color.values) +
+  thm
+
+# p.mb_ind.dot <- ggplot(data = FDR_TPR.dt) + theme_classic() +
+#   geom_point(aes(x=map,y = mb_ind, color=map),size = 2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt$map, limits=v) +
+#   facet_wrap(.~pop, scales = 'free_x') +
+#   thm
+
+
+# p.fdr <- ggplot() + theme_classic() +
+#   geom_violin(data = FDR_TPR.dt[map!='hapmap' & pop!=map], aes(x=pop,y = fdr, fill=pop_1kg)) +
+#   #geom_point(data = FDR_TPR.dt[map!='hapmap' & pop==map], aes(x=pop, y=fdr), color='black',size=2) +
+#   scale_x_discrete(breaks=FDR_TPR.dt[map!='hapmap' & pop!=map]$pop, limits=v) +
+#   scale_y_continuous(breaks = seq(0.0,0.75,0.05)) +
+#   #coord_cartesian(ylim=c(0,1), expand = TRUE) +
+#   scale_fill_manual(values = color.values) +
+#   thm
+
+
+p.fdr_by_map <- ggplot(fdr_range_0kb.dt[ pop %in% c('CHB','IBS','YRI') ]) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('fdr')+
+  xlab('Map 1kg population') +
+  thm
+
+
+p.tpr_by_map <- ggplot(tpr_range_0kb.dt[ pop %in% c('CHB','IBS','YRI') ]) + theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('tpr')+
+  xlab('Map 1kg population') +
+  thm
+
+p.mb_by_map <- ggplot() + theme_classic() +
+  geom_point(data = FDR_TPR_0kb.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind, color=pop), size=3) +
+  geom_point(data = FDR_TPR_0kb.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind, color=pop), size=3) +
+  geom_errorbar(data=mb_range_0kb.dt,aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('mb_ind')+
+  xlab('Map 1kg population') +
+  thm
+
+
+grid.arrange(p.fdr_by_map, p.tpr_by_map)
+
+```
+
+
+
+```{r FDR TPR against Filtered calls}
+
+FDR_TPR_FilteredCalls.dt <- fread('~/OLDAKEYLab/abwolf/FDR_TPR_FilteredCalls2.txt', col.names = c('pop','map','mb_ind','segs','fdr','fdr_bp','tpr','tpr_bp','mb_ind_FilteredCalls','segs_FilteredCalls'))
+
+FDR_TPR_FilteredCalls.dt$pop <- factor(FDR_TPR_FilteredCalls.dt$pop, levels = unique(arrange(FDR_TPR_FilteredCalls.dt,pop)$pop))
+
+EAS <-c('CHB','CHS','JPT','KHV','CDX')
+EUR <- c('CEU','IBS','TSI','FIN','GBR')
+AFR <- c('YRI','LWK','GWD','MSL','ESN')
+ACB_ASW <- c('ACB','ASW')
+AMR <- c('PUR','MXL','CLM','PEL')
+SAS <- c('GIH','BEB','PJL','STU','ITU')
+
+FDR_TPR_FilteredCalls.dt[pop %in% EAS,pop_1kg:=as.factor('EAS')]
+FDR_TPR_FilteredCalls.dt[pop %in% EUR,pop_1kg:=as.factor('EUR')]
+FDR_TPR_FilteredCalls.dt[pop %in% AFR,pop_1kg:=as.factor('AFR')]
+FDR_TPR_FilteredCalls.dt[pop %in% ACB_ASW,pop_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_FilteredCalls.dt[pop %in% AMR,pop_1kg:=as.factor('AMR')]
+FDR_TPR_FilteredCalls.dt[pop %in% SAS,pop_1kg:=as.factor('SAS')]
+
+FDR_TPR_FilteredCalls.dt[map %in% EAS,map_1kg:=as.factor('EAS')]
+FDR_TPR_FilteredCalls.dt[map %in% EUR,map_1kg:=as.factor('EUR')]
+FDR_TPR_FilteredCalls.dt[map %in% AFR,map_1kg:=as.factor('AFR')]
+FDR_TPR_FilteredCalls.dt[map %in% ACB_ASW,map_1kg:=as.factor('ACB_ASW')]
+FDR_TPR_FilteredCalls.dt[map %in% AMR,map_1kg:=as.factor('AMR')]
+FDR_TPR_FilteredCalls.dt[map %in% SAS,map_1kg:=as.factor('SAS')]
+
+
+v <- as.vector(arrange(FDR_TPR_FilteredCalls.dt[pop==map],desc(mb_ind))$pop)
+
+#v <- c(rep('SAS',5), rep('EAS',5),rep('ERU',5),rep('ARM',4),rep('AFR',5), rep('ACB_ASW',2))
+
+color.values <- c('EUR' = 'dodgerblue1', 'EAS' = 'orange3', 'SAS' = 'green3', 'AMR' = 'mediumpurple3', 'ACB_ASW' = 'tomato1', 'AFR' = 'red4')
+
+
+fdr_range_FilteredCalls.dt <- FDR_TPR_FilteredCalls.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(fdr_bp), pct_0 = quantile(fdr_bp,0), pct_1 = quantile(fdr_bp,1)) %>% 
+                  as.data.table()
+
+tpr_range_FilteredCalls.dt <- FDR_TPR_FilteredCalls.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(median = median(tpr_bp), pct_0 = quantile(tpr_bp,0), pct_1 = quantile(tpr_bp,1)) %>% 
+                  as.data.table()
+
+mb_range_FilteredCalls.dt <- FDR_TPR_FilteredCalls.dt[map!='hapmap'] %>% 
+                  group_by(pop,map_1kg) %>% 
+                  summarise(pct_0 = quantile(mb_ind,0), pct_1 = quantile(mb_ind,1)) %>% 
+                  as.data.table()
+
+
+thm <- theme(
+    axis.text = element_text(face='bold'),
+    axis.title = element_text(face='bold'),
+    legend.text = element_text(face='bold')
+  )
+
+
+p.mb_ind.violin <- ggplot() + theme_classic() +
+  geom_violin(data = FDR_TPR_FilteredCalls.dt[map!='hapmap'], aes(x=pop,y = mb_ind, fill=pop_1kg)) +
+  geom_point(data = FDR_TPR_FilteredCalls.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind), color='black',size=2) +
+  geom_point(data = FDR_TPR_FilteredCalls.dt[map!='hapmap' & pop==map], aes(x=pop, y=mb_ind_FilteredCalls), color='red',size=2) +
+  scale_x_discrete(breaks=FDR_TPR_FilteredCalls.dt[map!='hapmap']$pop, limits=v) +
+  scale_y_continuous(breaks = seq(0,70,5)) +
+  coord_cartesian(ylim=c(0,70), expand = FALSE) +
+  scale_fill_manual(values = color.values) +
+  thm
+
+p.fdr_by_map <- 
+  ggplot(fdr_range_FilteredCalls.dt[ pop %in% c('CHB','IBS','YRI') ]) + 
+  #ggplot(fdr_range_FilteredCalls.dt) +
+  theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.0,0.8,0.1)) +
+  coord_cartesian(ylim=c(0,0.8)) +
+  ylab('fdr')+
+  xlab('Map 1kg population') +
+  thm
+
+
+p.tpr_by_map <- 
+  ggplot(tpr_range_FilteredCalls.dt[ pop %in% c('CHB','IBS','YRI') ]) + 
+  #ggplot(tpr_range_FilteredCalls.dt) +
+  theme_classic() +
+  geom_point(aes(x=map_1kg, y=median, color=pop), size=3) +
+  geom_errorbar(aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  scale_y_continuous(breaks = seq(0.3,1,0.1)) +
+  coord_cartesian(ylim=c(0.3,1)) +
+  ylab('tpr')+
+  xlab('Map 1kg population') +
+  thm
+
+p.mb_by_map <- ggplot() + theme_classic() +
+  geom_point(data = FDR_TPR_FilteredCalls.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind, color=pop), size=3) +
+  geom_point(data = FDR_TPR_FilteredCalls.dt[map!='hapmap' & pop==map],aes(x=map_1kg, y=mb_ind_FilteredCalls), color='black', size=2) +
+  geom_errorbar(data=mb_range_FilteredCalls.dt,aes(x = map_1kg, ymin=pct_0, ymax=pct_1, color=pop)) +
+  facet_wrap(.~pop, scales = 'free_x') +
+  ylab('mb_ind')+
+  xlab('Map 1kg population') +
+  thm
+
+
+grid.arrange(p.fdr_by_map, p.tpr_by_map)
+
+```

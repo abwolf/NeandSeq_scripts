@@ -175,7 +175,7 @@ RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'callset_EUREAS',sample_size 
 
 
 ```{r  Bootstrap and 95CI}
-Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 100, callset = 'callset_EUREAS', sample_size = 2014, min_window = 1, pct_int_thrhld = 0.00031623)
+Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 10000, callset = 'callset_EUREAS', sample_size = 2014, min_window = 1, pct_int_thrhld = 0.00031623)
 
 CI <- data.table()
 for( i in seq(from=1, to=15, by=1)){
@@ -188,9 +188,14 @@ CI <- replace_na(CI,list(lower=0, upper=0))
 
 
 ```{r}
-ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + geom_ribbon(data=CI,aes(x=winsize, ymin=lower, ymax=upper), fill="grey", alpha=0.75)
+ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + 
+  geom_ribbon(data=CI,aes(x=winsize, ymin=lower, ymax=upper), fill="grey", alpha=0.75) +
+  theme()
 
-ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + geom_ribbon(data=CI,aes(x=winsize, ymin=lower, ymax=upper), fill="grey", alpha=0.75) + coord_cartesian(xlim=c(5,10), ylim=c(0.0,0.1), expand = c(0,0))
+ggplot() + theme_bw() + geom_line(data=RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + 
+  geom_ribbon(data=CI,aes(x=winsize, ymin=lower, ymax=upper), fill="grey", alpha=0.75) + 
+  coord_cartesian(xlim=c(5,10), ylim=c(0.0,0.1), expand = c(0,0)) +
+  theme()
 ```
 
 

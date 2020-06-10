@@ -174,25 +174,25 @@ ggplot() +
 ```{r}
 
 
-# EUR_hifreq_derived <- 
-#   IBDmix.EUREAS.derived_allele_freq %>%
-# #  IBDmix.EUREAS.derived_allele_freq %>%
-#   filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-#   filter(AFR<=0.01) %>%
-#   filter(EUR > 0.5 & EAS< 0.1) %>%
-#   as.data.table()
-# #  nrow()
-# #  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+#EUR_hifreq_derived <-
+  IBDmix.EUREAS.derived_allele_freq %>%
+#  IBDmix.EUREAS.derived_allele_freq %>%
+  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+ # filter(AFR<=0.01) %>%
+  filter(EUR > 0.4 & EAS< 0.1) %>%
+  as.data.table() %>%
+#  nrow()
+ write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EUR_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
 #   
 #    
-# EAS_hifreq_derived <- 
-#   IBDmix.EUREAS.derived_allele_freq %>%
-#   filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
-#   filter(AFR<=0.01) %>%
-#   filter(EUR < 0.1 & EAS > 0.5) %>%
-#   as.data.table()
-# #  nrow()
-# #  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
+#EAS_hifreq_derived <-
+  IBDmix.EUREAS.derived_allele_freq %>%
+  filter(d_EUR_EAS > 0.2 | d_EUR_EAS < -0.2 ) %>%
+#  filter(AFR<=0.01) %>%
+  filter(EUR < 0.1 & EAS > 0.5) %>%
+  as.data.table() %>%
+#  nrow()
+  write.table(file = '~/DATALab/NeanderthalSeq/DerivedAlleles/1kG_files/IBDmix/EAS_hifreq_DerivedAlleles.txt',quote = FALSE, sep = '\t', row.names = FALSE, col.names = TRUE)
 
 
 EUREAS_hifreq_derived <-

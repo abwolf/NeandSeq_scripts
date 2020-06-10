@@ -1,0 +1,532 @@
+---
+title: "IBDmix_Filter_By_cM"
+author: "Aaron Wolf"
+date: "3/16/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+#library(futile.logger)
+#library(VennDiagram)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+```
+
+```{r}
+# For running locally on Aaron's comp
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+# For running on gen-comp1 cluster
+# setwd('/Genomics/akeylab/abwolf/NeanderthalSeq/IBDmix/GenomicDistance_test')
+```
+
+
+```{r CHB Venn Diagrams 0.05cM}
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+CHB_0.05cM_Mb <- fread('denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed', select = 1:3, col.names = c('ID','strt','end')) %>%
+                    summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+CHB_50kbD_Mb <- fread('Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', select = 1:3, col.names = c('ID','strt','end')) %>%
+                    summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+CHB_0.05cM_50kbD_calls_MB <- fread(input = "bedops --intersect denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed")
+, 
+                                   col.names = c('ID','strt','end')) %>%
+                            summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+
+
+
+
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(CHB_0.05cM_Mb),
+  area2 = as.integer(CHB_50kbD_Mb),
+  cross.area = as.integer(CHB_0.05cM_50kbD_calls_MB),
+  category = c('CHB_0.05cM_MB','CHB_50kbD_MB'),
+  fill = c('red','dodgerblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(0.7,-1.0), c(0.5,-1.0)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'raw',
+  alpha=c(0.6, 0.9)
+)
+
+```
+
+
+
+```{r IBS Venn Diagram 0.05cM}
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+IBS_0.05cM_Mb <- fread('denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed', select = 1:3, col.names = c('ID','strt','end')) %>%
+                    summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+IBS_50kbD_Mb <- fread('Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', select = 1:3, col.names = c('ID','strt','end')) %>%
+                    summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+IBS_0.05cM_50kbD_calls_MB <- fread(cmd = 'bedops --intersect denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', 
+                                   col.names = c('ID','strt','end')) %>%
+                            summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+
+
+
+
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(IBS_0.05cM_Mb),
+  area2 = as.integer(IBS_50kbD_Mb),
+  cross.area = as.integer(IBS_0.05cM_50kbD_calls_MB),
+  category = c('IBS_0.05cM_MB','IBS_50kbD_MB'),
+  fill = c('red','dodgerblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(0.7,-1.0), c(0.5,-1.0)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'raw',
+  alpha=c(0.6, 0.9)
+)
+
+
+```
+
+
+```{r YRI Venn Diagram 0.05cM}
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+YRI_0.05cM_Mb <- fread('denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed', select = 1:3, col.names = c('ID','strt','end')) %>%
+                    summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+YRI_50kbD_Mb <- fread('Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', select = 1:3, col.names = c('ID','strt','end')) %>%
+                    summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+YRI_0.05cM_50kbD_calls_MB <- fread(cmd = 'bedops --intersect denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', 
+                                   col.names = c('ID','strt','end')) %>%
+                            summarise(sum(as.numeric((end-strt)/1000000))) %>% as.numeric()
+
+
+
+
+
+
+grid.newpage()
+draw.pairwise.venn(
+  area1 = as.integer(YRI_0.05cM_Mb),
+  area2 = as.integer(YRI_50kbD_Mb),
+  cross.area = as.integer(YRI_0.05cM_50kbD_calls_MB),
+  category = c('YRI_0.05cM_MB','YRI_50kbD_MB'),
+  fill = c('red','dodgerblue3'),
+  ext.text = FALSE,
+  cat.cex=2,
+  cat.fontface='bold',
+  cat.default.pos = 'text',
+  cat.just = list(c(0.7,-1.0), c(0.5,-1.0)),
+  fontface = 'bold',
+  cex=2,
+  print.mode = 'raw',
+  alpha=c(0.6, 0.9)
+)
+
+```
+
+
+
+```{r CHB 0.05cMs}
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+CHB_0.05cM_50kbD_intersect <- fread(cmd = 'bedops --intersect denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', 
+                                   col.names = c('ID','strt','end')) 
+
+CHB_0.05cM_50kbD_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+CHB_0.05cM_50kbD_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+
+CHB_50kbD_0.05cM_eo <- fread(cmd = 'bedops --element-of 1 Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'LOD_score','bp_len'))
+
+CHB_50kbD_0.05cM_neo <- fread(cmd = 'bedops --not-element-of 1 Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed ',
+                            col.names = c('ID','strt','end', 'LOD_score','bp_len'))
+
+####
+####
+
+CHB_0.05cM_50kb_intersect <- fread(cmd = 'bedops --intersect denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed denisovan_1kg_CHB_ALL.LOD4.50kb.bed', 
+                                   col.names = c('ID','strt','end')) 
+
+CHB_0.05cM_50kb_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed denisovan_1kg_CHB_ALL.LOD4.50kb.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+CHB_0.05cM_50kb_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed denisovan_1kg_CHB_ALL.LOD4.50kb.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+CHB_50kb_0.05cM_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_CHB_ALL.LOD4.50kb.bed denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+CHB_50kb_0.05cM_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_CHB_ALL.LOD4.50kb.bed denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+
+CHB.a <- ggplot() +
+  theme_classic() +
+  #geom_density(data = CHB_0.05cM_all, aes(x=log(cM_len), y = ..count../nrow(CHB_0.05cM_all)), alpha=0.5, fill='green') +
+  geom_density(data = CHB_0.05cM_50kbD_eo, aes(x=log(cM_len), y =..count.., fill = 'CHB_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = CHB_0.05cM_50kbD_neo, aes(x=log(cM_len), y = ..count.., fill = 'CHB_0.05cM_50kbD_neo'), alpha=0.5) +
+  ggtitle('CHB_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+CHB.b <- ggplot() +
+  theme_classic() +
+  geom_density(data = CHB_0.05cM_50kbD_eo, aes(x=log(bp_len), y =..count.., fill = 'CHB_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = CHB_0.05cM_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_0.05cM_50kbD_neo'), alpha=0.5) +
+  
+  geom_density(data = CHB_50kbD_0.05cM_eo, aes(x=log(bp_len), y =..count.., fill = 'CHB_50kbD_0.05cM_eo'), alpha=0.5) +
+  geom_density(data = CHB_50kbD_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_50kbD_0.05cM_neo'), alpha=0.5) +
+  
+  annotate(geom = "text", label = CHB_0.05cM_50kbD_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 9, y = 10000) +
+  annotate(geom = "text", label = CHB_50kbD_0.05cM_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 11, y = 30000) +
+  annotate(geom = "text", label = CHB_0.05cM_50kbD_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 13.5, y = 10000) +
+  
+  ggtitle('CHB_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+CHB.c <- ggplot() +
+  theme_classic() +
+  geom_density(data = CHB_0.05cM_50kbD_eo, aes(x=log(cM_Mb_ratio), y =..count.., fill = 'CHB_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = CHB_0.05cM_50kbD_neo, aes(x=log(cM_Mb_ratio), y = ..count.., fill = 'CHB_0.05cM_50kbD_neo'), alpha=0.5) +
+  ggtitle('CHB_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+grid.arrange(CHB.a, CHB.b, CHB.c)
+
+```
+
+
+
+```{r YRI 0.05cM}
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+YRI_0.05cM_50kbD_intersect <- fread(cmd = 'bedops --intersect denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', 
+                                   col.names = c('ID','strt','end')) 
+
+YRI_0.05cM_50kbD_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+YRI_0.05cM_50kbD_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+
+YRI_50kbD_0.05cM_eo <- fread(cmd = 'bedops --element-of 1 Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'LOD_score','bp_len'))
+
+YRI_50kbD_0.05cM_neo <- fread(cmd = 'bedops --not-element-of 1 Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed ',
+                            col.names = c('ID','strt','end', 'LOD_score','bp_len'))
+
+####
+####
+
+YRI_0.05cM_50kb_intersect <- fread(cmd = 'bedops --intersect denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed denisovan_1kg_YRI_ALL.LOD4.50kb.bed', 
+                                   col.names = c('ID','strt','end')) 
+
+YRI_0.05cM_50kb_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed denisovan_1kg_YRI_ALL.LOD4.50kb.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+YRI_0.05cM_50kb_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed denisovan_1kg_YRI_ALL.LOD4.50kb.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+YRI_50kb_0.05cM_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_YRI_ALL.LOD4.50kb.bed denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+YRI_50kb_0.05cM_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_YRI_ALL.LOD4.50kb.bed denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+YRI.a <- ggplot() +
+  theme_classic() +
+  #geom_density(data = YRI_0.05cM_all, aes(x=log(cM_len), y = ..count../nrow(YRI_0.05cM_all)), alpha=0.5, fill='green') +
+  geom_density(data = YRI_0.05cM_50kbD_eo, aes(x=log(cM_len), y =..count.., fill = 'YRI_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = YRI_0.05cM_50kbD_neo, aes(x=log(cM_len), y = ..count.., fill = 'YRI_0.05cM_50kbD_neo'), alpha=0.5) +
+  ggtitle('YRI_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+YRI.b <- ggplot() +
+  theme_classic() +
+  geom_density(data = YRI_0.05cM_50kbD_eo, aes(x=log(bp_len), y =..count.., fill = 'YRI_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = YRI_0.05cM_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_0.05cM_50kbD_neo'), alpha=0.5) +
+  
+  geom_density(data = YRI_50kbD_0.05cM_eo, aes(x=log(bp_len), y =..count.., fill = 'YRI_50kbD_0.05cM_eo'), alpha=0.5) +
+  geom_density(data = YRI_50kbD_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_50kbD_0.05cM_neo'), alpha=0.5) +
+  
+  annotate(geom = "text", label = YRI_0.05cM_50kbD_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 9, y = 10000) +
+  annotate(geom = "text", label = YRI_50kbD_0.05cM_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 11, y = 20000) +
+  annotate(geom = "text", label = YRI_0.05cM_50kbD_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 13, y = 10000) +
+  
+  ggtitle('YRI_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+YRI.c <- ggplot() +
+  theme_classic() +
+  geom_density(data = YRI_0.05cM_50kbD_eo, aes(x=log(cM_Mb_ratio), y =..count.., fill = 'YRI_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = YRI_0.05cM_50kbD_neo, aes(x=log(cM_Mb_ratio), y = ..count.., fill = 'YRI_0.05cM_50kbD_neo'), alpha=0.5) +
+  ggtitle('YRI_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+grid.arrange(YRI.a, YRI.b, YRI.c)
+
+```
+
+
+```{r IBS 0.05cM}
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni')
+
+IBS_0.05cM_all <- fread('denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed',
+                        col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS_0.05cM_50kbD_intersect <- fread(cmd = 'bedops --intersect denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed', 
+                                   col.names = c('ID','strt','end')) 
+
+IBS_0.05cM_50kbD_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS_0.05cM_50kbD_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+IBS_50kbD_0.05cM_eo <- fread(cmd = 'bedops --element-of 1 Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'LOD_score','bp_len'))
+
+IBS_50kbD_0.05cM_neo <- fread(cmd = 'bedops --not-element-of 1 Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed ',
+                            col.names = c('ID','strt','end', 'LOD_score','bp_len'))
+
+####
+####
+
+IBS_0.05cM_50kb_intersect <- fread(cmd = 'bedops --intersect denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed denisovan_1kg_IBS_ALL.LOD4.50kb.bed', 
+                                   col.names = c('ID','strt','end')) 
+
+IBS_0.05cM_50kb_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed denisovan_1kg_IBS_ALL.LOD4.50kb.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS_0.05cM_50kb_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed denisovan_1kg_IBS_ALL.LOD4.50kb.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS_50kb_0.05cM_eo <- fread(cmd = 'bedops --element-of 1 denisovan_1kg_IBS_ALL.LOD4.50kb.bed denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS_50kb_0.05cM_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_IBS_ALL.LOD4.50kb.bed denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS.a <- ggplot() +
+  theme_classic() +
+  #geom_density(data = IBS_0.05cM_all, aes(x=log(cM_len), y = ..count../nrow(IBS_0.05cM_all)), alpha=0.5, fill='green') +
+  geom_density(data = IBS_0.05cM_50kbD_eo, aes(x=log(cM_len), y =..count.., fill = 'IBS_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = IBS_0.05cM_50kbD_neo, aes(x=log(cM_len), y = ..count.., fill = 'IBS_0.05cM_50kbD_neo'), alpha=0.5) +
+  ggtitle('IBS_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+IBS.b <- ggplot() +
+  theme_classic() +
+  geom_density(data = IBS_0.05cM_50kbD_eo, aes(x=log(bp_len), y =..count.., fill = 'IBS_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = IBS_0.05cM_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_0.05cM_50kbD_neo'), alpha=0.5) +
+  
+  geom_density(data = IBS_50kbD_0.05cM_eo, aes(x=log(bp_len), y =..count.., fill = 'IBS_50kbD_0.05cM_eo'), alpha=0.5) +
+  geom_density(data = IBS_50kbD_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_50kbD_0.05cM_neo'), alpha=0.5) +
+  
+  annotate(geom = "text", label = IBS_0.05cM_50kbD_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 9, y = 10000) +
+  annotate(geom = "text", label = IBS_50kbD_0.05cM_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 11, y = 20000) +
+  annotate(geom = "text", label = IBS_0.05cM_50kbD_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 13, y = 10000) +
+  
+  ggtitle('IBS_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+IBS.c <- ggplot() +
+  theme_classic() +
+  geom_density(data = IBS_0.05cM_50kbD_eo, aes(x=log(cM_Mb_ratio), y =..count.., fill = 'IBS_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = IBS_0.05cM_50kbD_neo, aes(x=log(cM_Mb_ratio), y = ..count.., fill = 'IBS_0.05cM_50kbD_neo'), alpha=0.5) +
+  ggtitle('IBS_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  theme()
+
+grid.arrange(IBS.a, IBS.b, IBS.c)
+
+```
+
+
+
+```{r 0.05cM grid}
+
+grid.arrange(CHB.a, CHB.b, CHB.c,
+             IBS.a, IBS.b, IBS.c,
+             YRI.a, YRI.b, YRI.c,
+             ncol=3)
+```
+
+
+
+```{r}
+
+CHB_50kb_50kbD_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_CHB_ALL.LOD4.50kb.bed Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+CHB_50kb_50kbD_neo_0.05cM_eo <- fread(cm = 'bedops --not-element-of 1 denisovan_1kg_CHB_ALL.LOD4.50kb.bed Deni2013pub.CHB_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed | bedops --element-of 1 denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed - ',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+CHB.g <- ggplot() +
+  theme_classic() +
+  
+  # How much are you getting that you had before
+  geom_density(data = CHB_0.05cM_50kb_eo, aes(x=log(bp_len), y =..count.., fill = 'CHB_0.05cM_50kb_eo'), alpha=0.5) +
+  geom_density(data = CHB_0.05cM_50kbD_eo, aes(x=log(bp_len), y =..count.., fill = 'CHB_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = CHB_50kb_50kbD_neo, aes(x=log(bp_len), y =..count.., fill = 'CHB_50kb_50kbD_neo'), alpha=0.5) +
+  geom_density(data = CHB_50kb_50kbD_neo_0.05cM_eo, aes(x=log(bp_len), y =..count.., fill = 'CHB_50kb_50kbD_neo_0.05cM_eo'), alpha=0.5) +
+    
+  # How much are you getting that is new
+  #geom_density(data = CHB_0.05cM_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_0.05cM_50kbD_neo'), alpha=0.5) +
+  #geom_density(data = CHB_0.05cM_50kb_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_0.05cM_50kb_neo'), alpha=0.5) +
+  
+  # How much are you losing
+  #geom_density(data = CHB_50kbD_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_50kbD_0.05cM_neo'), alpha=0.5) +
+  #geom_density(data = CHB_50kb_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_50kb_0.05cM_neo'), alpha=0.5) +
+   
+  #geom_density(data = CHB_50kb_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'CHB_50kb_50kbD_neo'), alpha=0.5) +
+  
+#  geom_density(data = CHB_0.05cM_50kbD_50kb_neo, aes(x=log(bp_len), y = ..count.., fill='CHB_0.05cM_50kbD_50kb_neo'), alpha= 0.5) +
+    
+  annotate(geom = "text", label = CHB_0.05cM_50kb_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 12, y = 20000, size=5) +
+  annotate(geom = "text", label = CHB_0.05cM_50kbD_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 12.75, y = 15000, size=5) +
+  annotate(geom = "text", label = CHB_50kb_50kbD_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 11.8, y = 5000, size=5) +
+  annotate(geom = "text", label = CHB_50kb_50kbD_neo_0.05cM_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 12.5, y = 1100, size=5) +
+
+
+  
+  ggtitle('CHB_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  coord_cartesian(xlim = c(10.5,14), ylim=c(0,25000)) +
+  theme()
+
+```
+
+
+```{r}
+
+YRI_50kb_50kbD_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_YRI_ALL.LOD4.50kb.bed Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+YRI_50kb_50kbD_neo_0.05cM_eo <- fread(cm = 'bedops --not-element-of 1 denisovan_1kg_YRI_ALL.LOD4.50kb.bed Deni2013pub.YRI_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed | bedops --element-of 1 denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed - ',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+YRI.g <- ggplot() +
+  theme_classic() +
+  
+  # How much are you getting that you had before
+  geom_density(data = YRI_0.05cM_50kb_eo, aes(x=log(bp_len), y =..count.., fill = 'YRI_0.05cM_50kb_eo'), alpha=0.5) +
+  geom_density(data = YRI_0.05cM_50kbD_eo, aes(x=log(bp_len), y =..count.., fill = 'YRI_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = YRI_50kb_50kbD_neo, aes(x=log(bp_len), y =..count.., fill = 'YRI_50kb_50kbD_neo'), alpha=0.5) +
+  geom_density(data = YRI_50kb_50kbD_neo_0.05cM_eo, aes(x=log(bp_len), y =..count.., fill = 'YRI_50kb_50kbD_neo_0.05cM_eo'), alpha=0.5) +
+    
+  # How much are you getting that is new
+  #geom_density(data = YRI_0.05cM_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_0.05cM_50kbD_neo'), alpha=0.5) +
+  #geom_density(data = YRI_0.05cM_50kb_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_0.05cM_50kb_neo'), alpha=0.5) +
+  
+  # How much are you losing
+  #geom_density(data = YRI_50kbD_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_50kbD_0.05cM_neo'), alpha=0.5) +
+  #geom_density(data = YRI_50kb_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_50kb_0.05cM_neo'), alpha=0.5) +
+   
+  #geom_density(data = YRI_50kb_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'YRI_50kb_50kbD_neo'), alpha=0.5) +
+  
+#  geom_density(data = YRI_0.05cM_50kbD_50kb_neo, aes(x=log(bp_len), y = ..count.., fill='YRI_0.05cM_50kbD_50kb_neo'), alpha= 0.5) +
+    
+  annotate(geom = "text", label = YRI_0.05cM_50kb_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.integer(), x = 11, y = 6000, size=5) +
+  annotate(geom = "text", label = YRI_0.05cM_50kbD_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.integer(), x = 12, y = 3000, size=5) +
+  annotate(geom = "text", label = YRI_50kb_50kbD_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.integer(), x = 11.25, y = 2000, size=5) +
+  annotate(geom = "text", label = YRI_50kb_50kbD_neo_0.05cM_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.integer(), x = 11.25, y = 450, size=5) +
+
+
+  
+  ggtitle('YRI_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  coord_cartesian(xlim = c(10.5,14), ylim=c(0,25000)) +
+  theme()
+
+```
+
+
+```{r}
+
+IBS_50kb_50kbD_neo <- fread(cmd = 'bedops --not-element-of 1 denisovan_1kg_IBS_ALL.LOD4.50kb.bed Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+IBS_50kb_50kbD_neo_0.05cM_eo <- fread(cm = 'bedops --not-element-of 1 denisovan_1kg_IBS_ALL.LOD4.50kb.bed Deni2013pub.IBS_ALL.LOD4.50K.filterallpopNeand.filterAFRDeni30pct.bed | bedops --element-of 1 denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed - ',
+                            col.names = c('ID','strt','end', 'cM_len','bp_len','cM_Mb_ratio'))
+
+
+IBS.g <- ggplot() +
+  theme_classic() +
+  
+  # How much are you getting that you had before
+  geom_density(data = IBS_0.05cM_50kb_eo, aes(x=log(bp_len), y =..count.., fill = 'IBS_0.05cM_50kb_eo'), alpha=0.5) +
+  geom_density(data = IBS_0.05cM_50kbD_eo, aes(x=log(bp_len), y =..count.., fill = 'IBS_0.05cM_50kbD_eo'), alpha=0.5) +
+  geom_density(data = IBS_50kb_50kbD_neo, aes(x=log(bp_len), y =..count.., fill = 'IBS_50kb_50kbD_neo'), alpha=0.5) +
+  geom_density(data = IBS_50kb_50kbD_neo_0.05cM_eo, aes(x=log(bp_len), y =..count.., fill = 'IBS_50kb_50kbD_neo_0.05cM_eo'), alpha=0.5) +
+    
+  # How much are you getting that is new
+  #geom_density(data = IBS_0.05cM_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_0.05cM_50kbD_neo'), alpha=0.5) +
+  #geom_density(data = IBS_0.05cM_50kb_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_0.05cM_50kb_neo'), alpha=0.5) +
+  
+  # How much are you losing
+  #geom_density(data = IBS_50kbD_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_50kbD_0.05cM_neo'), alpha=0.5) +
+  #geom_density(data = IBS_50kb_0.05cM_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_50kb_0.05cM_neo'), alpha=0.5) +
+   
+  #geom_density(data = IBS_50kb_50kbD_neo, aes(x=log(bp_len), y = ..count.., fill = 'IBS_50kb_50kbD_neo'), alpha=0.5) +
+  
+#  geom_density(data = IBS_0.05cM_50kbD_50kb_neo, aes(x=log(bp_len), y = ..count.., fill='IBS_0.05cM_50kbD_50kb_neo'), alpha= 0.5) +
+    
+  annotate(geom = "text", label = IBS_0.05cM_50kb_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 12, y = 15000, size=5) +
+  annotate(geom = "text", label = IBS_0.05cM_50kbD_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 13, y = 10000, size=5) +
+  annotate(geom = "text", label = IBS_50kb_50kbD_neo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 12, y = 3500, size=5) +
+  annotate(geom = "text", label = IBS_50kb_50kbD_neo_0.05cM_eo %>% summarise(sum(as.numeric((bp_len)/1000000))) %>% as.numeric(), x = 12.5, y = 1000, size=5) +
+
+
+  
+  ggtitle('IBS_0.05cM_50kbD') +
+  scale_fill_brewer(type = 'div', palette = 'Dark2') +
+  coord_cartesian(xlim = c(10.5,14), ylim=c(0,25000)) +
+  theme()
+
+```
+
+```{r}
+grid.arrange(CHB.g,IBS.g,YRI.g, ncol=3)
+```
+

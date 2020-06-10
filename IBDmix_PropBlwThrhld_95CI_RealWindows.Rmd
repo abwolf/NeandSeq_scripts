@@ -150,14 +150,17 @@ CI.95.fn <- function(reps, callset, sample_size, min_window, quer_prop){
 ```{r}
 
 # Calculate the proportion of queryable windows w/ cM~1 that are bewlo the pct_int_thrhld
-RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'EUR_EAS_AFR', sample_size = 1511, min_window = 1, quer_prop = 0.75)
+EUR_EAS_AFR.RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'EUR_EAS_AFR', sample_size = 1511, min_window = 1, quer_prop = 0.75)
+EUR_EAS_YRI.RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'EUR_EAS_YRI', sample_size = 1115, min_window = 1, quer_prop = 0.75)
+EUR_EAS.RD.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'EUR_EAS', sample_size = 1007, min_window = 1, quer_prop = 0.75)
 
 ```
 
 
 ```{r}
 
-Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 100, callset = 'EUR_EAS_AFR', sample_size = 1511, min_window = 1, quer_prop = 0.75)
+
+Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 100, callset = 'EUR_EAS_YRI', sample_size = 1115, min_window = 1, quer_prop = 0.75)
 
 CI <- data.table()
 for( i in seq(from=1, to=15, by=1)){
@@ -168,6 +171,13 @@ for( i in seq(from=1, to=15, by=1)){
 CI <- replace_na(CI,list(lower=0, upper=0))
 
 
+```
+
+
+```{r}
+EUR_EAS_YRI.SimData.prop_blw_thrhld <- fread('~/DATALab/NeanderthalSeq/IBDmix/desert_test/Tenn_base_sim/n1_0.03_AFR_216_EUR_1006_EAS_1008/IBDmixCalls/IntroSeg.ALL.D4E0.002.ALL.50kb.bed.5_to_15Mb.prop_blw_thrhld_0.0005',col.names = c('mdl','winsize','n_blw_thrhld','prop_blw_thrhld','n1','n2','admix'))
+
+EUR_EAS_AFR.SimData.prop_blw_thrhld <- fread('~/DATALab/NeanderthalSeq/IBDmix/desert_test/Tenn_base_sim/n1_0.03_AFR_1008_EUR_1006_EAS_1008/IBDmixCalls/IntroSeg.ALL.D4E0.002.ALL.50kb.bed.5_to_15Mb.prop_blw_thrhld_0.00126',col.names = c('mdl','winsize','n_blw_thrhld','prop_blw_thrhld','n1','n2','admix'))
 ```
 
 
@@ -184,12 +194,12 @@ ggplot() + theme_classic() +
   geom_line(data=EUR_EAS_AFR.RD.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed") + 
   geom_ribbon(data=EUR_EAS_AFR.CI,aes(x=winsize, ymin=lower, ymax=upper, fill="EUR_EAS_AFR"), alpha=0.75) +
   
-  geom_line(data=EUR_EAS_YRI.SimData.prop_blw_thrhld, aes(x=ws, y=prop_blw_thrhld), linetype="solid", color="black") +
-  geom_line(data=EUR_EAS_AFR.SimData.prop_blw_thrhld, aes(x=ws, y=prop_blw_thrhld), linetype="solid", color="orange4") +
-  # geom_line(data=SimData.prop_blw_thrhld, aes(x=ws, y=prop_blw_thrhld), linetype="solid", color="blue") +
-  # geom_line(data=Sstar.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed", color="green4") +
-  # geom_ribbon(data=Sstar.prop_blw_thrhld.CI,aes(x=Winsize, ymin=lwr, ymax=upr), fill="green4", alpha=0.75) + 
-  coord_cartesian(xlim=c(5,10), ylim=c(0.0,0.1), expand = c(0,0))
+  # geom_line(data=EUR_EAS_YRI.SimData.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="solid", color="black") +
+  # geom_line(data=EUR_EAS_AFR.SimData.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="solid", color="orange4") +
+
+  geom_line(data=Sstar.prop_blw_thrhld, aes(x=winsize, y=prop_blw_thrhld), linetype="dashed", color="yellow4") +
+  geom_ribbon(data=Sstar.prop_blw_thrhld.CI,aes(x=Winsize, ymin=lwr, ymax=upr), fill="yellow4", alpha=0.75) +
+  coord_cartesian(xlim=c(3,8), ylim=c(0.0,0.1), expand = FALSE)
 ```
 
 
@@ -204,12 +214,12 @@ EUR_EAS_AFR.SimData <- fread(cmd = 'gzcat ~/DATALab/NeanderthalSeq/IBDmix/desert
 SimData.prop_blw_thrhld <- data.table(NULL)
 
 for(ws in seq(5,15,by = 1)){
-    # #EUR_EAS_YRI
-    # pct_int_thrhld <- 0.0007762471
-    # sample_size <- 1115
-    #EUR_EAS_AFR
-    pct_int_thrhld <- 0.0012589
-    sample_size <- 1511
+    #EUR_EAS_YRI
+    pct_int_thrhld <- 0.0007762471
+    sample_size <- 1115
+    # #EUR_EAS_AFR
+    # pct_int_thrhld <- 0.0012589
+    # sample_size <- 1511
   
       #ws <- 5
     pct_int_tbl <- SimData %>% filter(winsize == ws) %>% group_by(chr) %>% summarise(pct_int=sum(end-strt)/(ws*1000000)/sample_size) %>% as.data.table()

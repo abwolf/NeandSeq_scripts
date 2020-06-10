@@ -1,0 +1,384 @@
+---
+title: "Untitled"
+author: "Aaron Wolf"
+date: "4/6/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(RColorBrewer)
+```
+
+
+```{r}
+
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni/')
+
+YRI.50kb <- fread("bedmap --ec --delim '\t' --echo --count denisovan_1kg_YRI_ALL.LOD4.50kb.bed.merged denisovan_1kg_YRI_ALL.LOD4.50kb.bed.alt",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+YRI.0.05cM <- fread("bedmap --ec --delim '\t' --echo --count denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt",
+             col.names=c('chr','start','end','count')) %>% 
+      filter(count>0)
+
+ggplot() + theme_classic() +
+  stat_ecdf(data = YRI.50kb, aes(x=count, color="YRI.50kb")) +
+  stat_ecdf(data = YRI.0.05cM, aes(x = count, color="YRI.0.05cM")) +
+  
+  coord_cartesian(xlim = c(0,101),expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1), name = "proportion of merged calls") +
+  scale_x_continuous(breaks = seq(0,108,2), labels = seq(0,118/108,by = 0.02),name = 'frequency in AFR_pop') +
+  
+  theme()
+
+#stat_ecdf(data = YRI.50kb)
+
+quantile(x = YRI.0.05cM$count,probs = c(0.1,0.9,0.95))
+
+
+#quantile(x = YRI.50kb$count,probs = c(0.1,0.9,0.95))
+
+
+ggplot() + theme_classic() +
+  
+  annotate("rect",xmin=0,xmax=32,ymin=0,ymax=0.95, fill="green", alpha=0.25) + 
+  annotate("rect",xmin=0,xmax=19, ymin=0, ymax=0.9, fill="blue", alpha=0.25) +
+  
+  
+  stat_ecdf(data = YRI.0.05cM, aes(x = count, color="YRI.0.05cM"), size=1) +
+  
+  coord_cartesian(xlim = c(0,101),expand = FALSE) +
+  scale_y_continuous(breaks = seq(0,1,0.1), name = "proportion of merged calls") +
+  scale_x_continuous(breaks = seq(0,108,2), labels = round(seq(0,118/108,by = 0.02),2),name = 'frequency in AFR_pop') +
+  
+  theme()
+
+
+
+ggplot() + theme_classic() + 
+  geom_density(data=YRI.0.05cM, aes(x=count/108, y=..scaled.., fill="YRI.0.05cM"), alpha=0.75) +
+  theme()
+
+ggplot() + theme_classic() + 
+  geom_density(data=YRI.0.05cM, aes(x=log10((end-start)/1000), y=..count.., fill="YRI.0.05cM"), alpha=0.75) +
+  xlab(label = "length of segments log10(kb)")
+  theme()
+
+
+pct20 <- ggplot() + theme_classic() + 
+  geom_density(data=YRI.0.05cM, aes(x=log10((end-start)/1000), y=..count.., fill="YRI.0.05cM"), alpha=0.75) +
+    geom_density(data=YRI.0.05cM %>% filter(count<=20), aes(x=log10((end-start)/1000), y=..count..,fill="YRI.0.05cM.blw20pct"), alpha=0.75) +
+  geom_density(data=YRI.0.05cM %>% filter(count>20), aes(x=log10((end-start)/1000), y=..count..,fill="YRI.0.05cM.abv20pct"), alpha=0.75) +
+  xlab(label = "length of segments log10(kb)") +
+  theme()
+
+
+pct30 <- ggplot() + theme_classic() + 
+  geom_density(data=YRI.0.05cM, aes(x=log10((end-start)/1000), y=..count.., fill="YRI.0.05cM"), alpha=0.75) +
+    geom_density(data=YRI.0.05cM %>% filter(count<=32), aes(x=log10((end-start)/1000), y=..count..,fill="YRI.0.05cM.blw30pct"), alpha=0.75) +
+  geom_density(data=YRI.0.05cM %>% filter(count>32), aes(x=log10((end-start)/1000), y=..count..,fill="YRI.0.05cM.abv30pct"), alpha=0.75) +
+  xlab(label = "length of segments log10(kb)") +
+  theme()
+
+
+grid.arrange(pct20,pct30,ncol=2)
+
+```
+
+```{r}
+
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni/Gen_Dist_callset/matching_recomb_map/')
+
+CHB.20pct.kept <- fread(cmd = " bedtools intersect -v -a denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt -b denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged.20pctFreq.remove_list", col.names = c('chr','strt','end'))
+
+CHB.20pct.remove <- fread(cmd = " bedtools intersect -wa -a denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt -b denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged.20pctFreq.remove_list", col.names = c('chr','strt','end'))
+
+CHB.20pct.remove.indicator <- fread('denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.20pctFreq_remove.indicator',
+                                    col.names=c('chr','strt','end','cM_len','bp_len','LOD','ID','remove_indicator'))
+
+CHB <- fread(input = 'denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt', col.names = c('chr','strt','end'))
+CHB.30pct <- fread(input = 'denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt.filterAFRDeni30pct', col.names = c('chr','strt','end'))
+CHB.20pct <- fread(input = 'denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt.filterAFRDeni20pct', col.names = c('chr','strt','end'))
+CHB.deni.freq <- fread(cmd = 'bedops --merge denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt | bedmap --ec --delim "\t" --echo --count - denisovan_1kg_CHB_ALL.LOD4.0.05cM.bed.alt', col.names = c('chr','strt','end','count'))
+
+
+
+IBS.20pct.kept <- fread(cmd = " bedtools intersect -v -a denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt -b denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged.20pctFreq.remove_list", col.names = c('chr','strt','end'))
+
+IBS.20pct.remove <- fread(cmd = " bedtools intersect -wa -a denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt -b denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged.20pctFreq.remove_list", col.names = c('chr','strt','end'))
+
+IBS.20pct.remove.indicator <- fread('denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.20pctFreq_remove.indicator',
+                                    col.names=c('chr','strt','end','cM_len','bp_len','LOD','ID','remove_indicator'))
+
+IBS <- fread(input = 'denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt', col.names = c('chr','strt','end'))
+IBS.30pct <- fread(input = 'denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt.filterAFRDeni30pct', col.names = c('chr','strt','end'))
+IBS.20pct <- fread(input = 'denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt.filterAFRDeni20pct', col.names = c('chr','strt','end'))
+IBS.deni.freq <- fread(cmd = 'bedops --merge denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt | bedmap --ec --delim "\t" --echo --count - denisovan_1kg_IBS_ALL.LOD4.0.05cM.bed.alt', col.names = c('chr','strt','end','count'))
+
+
+
+YRI.20pct.kept <- fread(cmd = " bedtools intersect -v -a denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt -b denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged.20pctFreq.remove_list", col.names = c('chr','strt','end'))
+
+YRI.20pct.remove <- fread(cmd = " bedtools intersect -wa -a denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt -b denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.merged.20pctFreq.remove_list", col.names = c('chr','strt','end'))
+
+YRI.20pct.remove.indicator <- fread('denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.20pctFreq_remove.indicator',
+                                    col.names=c('chr','strt','end','cM_len','bp_len','LOD','ID','remove_indicator'))
+
+YRI <- fread(input = 'denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt', col.names = c('chr','strt','end'))
+YRI.30pct <- fread(input = 'denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt.filterAFRDeni30pct', col.names = c('chr','strt','end'))
+YRI.20pct <- fread(input = 'denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt.filterAFRDeni20pct', col.names = c('chr','strt','end'))
+YRI.deni.freq <- fread(cmd = 'bedops --merge denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt | bedmap --ec --delim "\t" --echo --count - denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed.alt', col.names = c('chr','strt','end','count'))
+
+########
+
+ggplot() + theme_classic() +
+  stat_ecdf(data = CHB.deni.freq, aes(x=(count/104), color="CHB")) +
+  stat_ecdf(data=IBS.deni.freq, aes(x=(count/107), color="IBS")) +
+  stat_ecdf(data=YRI.deni.freq, aes(x=(count/108), color='YRI')) +
+  
+  coord_cartesian(xlim=c(0,1), expand = FALSE) +
+  xlab("Frequency in Populations") +
+  ylab("Proportion of merged calls")+
+  theme()
+
+######
+
+ggplot() + theme_classic() +
+  geom_density(data=CHB, aes(x=log10((end-strt)/1000), y=..count.., fill="CHB"), alpha=0.5) +
+  geom_density(data=YRI, aes(x=log10((end-strt)/1000), y=..count.., fill="YRI"), alpha=0.5) +
+  geom_density(data=IBS, aes(x=log10((end-strt)/1000), y=..count.., fill="IBS"), alpha=0.5) +
+  
+  xlab("log10(kb)")
+  theme()
+  
+  
+  ggplot() + theme_classic() +
+  geom_density(data=CHB.20pct, aes(x=log10((end-strt)/1000), y=..count.., fill="CHB.20pct"), alpha=0.5) +
+  #geom_density(data=YRI.20pct, aes(x=log10((end-strt)/1000), y=..count.., fill="YRI.20pct"), alpha=0.5) +
+  #geom_density(data=IBS.20pct, aes(x=log10((end-strt)/1000), y=..count.., fill="IBS.20pct"), alpha=0.5) +
+    
+  geom_density(data=setdiff(CHB,CHB.20pct), aes(x=log10((end-strt)/1000), y=..count.., fill="CHB.20pct.removed"), alpha=0.5) +
+  #geom_density(data=setdiff(YRI,YRI.20pct), aes(x=log10((end-strt)/1000), y=..count.., fill="YRI.20pct.removed"), alpha=0.5) +
+  #geom_density(data=setdiff(IBS,IBS.20pct), aes(x=log10((end-strt)/1000), y=..count.., fill="IBS.20pct.removed"), alpha=0.5) +
+  
+  xlab("log10(kb)")
+  theme()
+
+########  
+  
+C <-    ggplot() + theme_classic() +
+  geom_density(data=CHB.20pct.remove.indicator, aes(x=log10(cM_len), y=..count.., fill="CHB.indicator"), alpha=0.5) +
+  geom_density(data=CHB.20pct.remove.indicator[remove_indicator==0], 
+               aes(x=log10(cM_len), y=..count.., fill="CHB.20pct.indicator.kept"), alpha=0.5) +
+  geom_density(data=CHB.20pct.remove.indicator[remove_indicator==1], 
+               aes(x=log10(cM_len), y=..count.., fill="CHB.20pct.indicator.remove"), alpha=0.5) +
+  
+  geom_vline(xintercept = log10(median(CHB.20pct.remove.indicator[remove_indicator==1]$cM_len)), linetype="dashed", color="darkgreen")+
+  geom_vline(xintercept = log10(median(CHB.20pct.remove.indicator[remove_indicator==0]$cM_len)), linetype="dashed", color="red")+
+    
+  xlab("log10(cM_len)") +
+  coord_cartesian(xlim=c(log10(0.05),0)) +
+  theme()
+    
+  #   ggplot() + theme_classic() +
+  # geom_density(data=CHB, aes(x=log10((end-strt)/1000), y=..count.., fill="CHB"), alpha=0.5) +
+  # geom_density(data=CHB.20pct.kept, aes(x=log10((end-strt)/1000), y=..count.., fill="CHB.20pct.kept"), alpha=0.5) +
+  # geom_density(data=CHB.20pct.remove, aes(x=log10((end-strt)/1000), y=..count.., fill="CHB.20pct.remove"), alpha=0.5) +
+  # 
+  # geom_vline(xintercept = log10(median(CHB.20pct.kept[,end-strt])/1000), linetype="dashed", color="darkgreen")+
+  # geom_vline(xintercept = log10(median(CHB.20pct.remove[,end-strt])/1000), linetype="dashed", color="blue")+
+  #   
+  # xlab("log10(kb)") +
+  # coord_cartesian(xlim=c(0,3)) +
+  # theme()
+  # 
+  
+
+I <-   ggplot() + theme_classic() +
+  geom_density(data=IBS.20pct.remove.indicator, aes(x=log10(cM_len), y=..count.., fill="IBS.indicator"), alpha=0.5) +
+  geom_density(data=IBS.20pct.remove.indicator[remove_indicator==0], 
+               aes(x=log10(cM_len), y=..count.., fill="IBS.20pct.indicator.kept"), alpha=0.5) +
+  geom_density(data=IBS.20pct.remove.indicator[remove_indicator==1], 
+               aes(x=log10(cM_len), y=..count.., fill="IBS.20pct.indicator.remove"), alpha=0.5) +
+  
+  geom_vline(xintercept = log10(median(IBS.20pct.remove.indicator[remove_indicator==1]$cM_len)), linetype="dashed", color="darkgreen")+
+  geom_vline(xintercept = log10(median(IBS.20pct.remove.indicator[remove_indicator==0]$cM_len)), linetype="dashed", color="red")+
+    
+  xlab("log10(cM_len)") +
+  coord_cartesian(xlim=c(log10(0.05),0)) +
+  theme()
+ 
+  # ggplot() + theme_classic() +
+  # geom_density(data=IBS, aes(x=log10((end-strt)/1000), y=..count.., fill="IBS"), alpha=0.5) +
+  # geom_density(data=IBS.20pct.kept, aes(x=log10((end-strt)/1000), y=..count.., fill="IBS.20pct.kept"), alpha=0.5) +
+  # geom_density(data=IBS.20pct.remove, aes(x=log10((end-strt)/1000), y=..count.., fill="IBS.20pct.remove"), alpha=0.5) +
+  # 
+  # geom_vline(xintercept = log10(median(IBS.20pct.kept[,end-strt])/1000), linetype="dashed", color="darkgreen")+
+  # geom_vline(xintercept = log10(median(IBS.20pct.remove[,end-strt])/1000), linetype="dashed", color="blue")+
+  # 
+  # xlab("log10(kb)") +
+  # coord_cartesian(xlim=c(0,3)) +
+  # theme()
+  
+Y <-  ggplot() + theme_classic() +
+  geom_density(data=YRI.20pct.remove.indicator, aes(x=log10(cM_len), y=..count.., fill="YRI.indicator"), alpha=0.5) +
+  geom_density(data=YRI.20pct.remove.indicator[remove_indicator==0], 
+               aes(x=log10(cM_len), y=..count.., fill="YRI.20pct.indicator.kept"), alpha=0.5) +
+  geom_density(data=YRI.20pct.remove.indicator[remove_indicator==1], 
+               aes(x=log10(cM_len), y=..count.., fill="YRI.20pct.indicator.remove"), alpha=0.5) +
+  
+  geom_vline(xintercept = log10(median(YRI.20pct.remove.indicator[remove_indicator==1]$cM_len)), linetype="dashed", color="darkgreen")+
+  geom_vline(xintercept = log10(median(YRI.20pct.remove.indicator[remove_indicator==0]$cM_len)), linetype="dashed", color="red")+
+    
+  xlab("log10(cM_len)") +
+  coord_cartesian(xlim=c(log10(0.05),0)) +
+  theme() 
+  
+  # ggplot() + theme_classic() +
+  # geom_density(data=YRI, aes(x=log10((end-strt)/1000), y=..count.., fill="YRI"), alpha=0.5) +
+  # geom_density(data=YRI.20pct.kept, aes(x=log10((end-strt)/1000), y=..count.., fill="YRI.20pct.kept"), alpha=0.5) +
+  # geom_density(data=YRI.20pct.remove, aes(x=log10((end-strt)/1000), y=..count.., fill="YRI.20pct.remove"), alpha=0.5) +
+  # 
+  # geom_vline(xintercept = log10(median(YRI.20pct.kept[,end-strt])/1000), linetype="dashed", color="darkgreen")+
+  # geom_vline(xintercept = log10(median(YRI.20pct.remove[,end-strt])/1000), linetype="dashed", color="blue")+
+  # 
+  # xlab("log10(kb)") +
+  # coord_cartesian(xlim=c(0,3)) +
+  # theme() 
+
+grid.arrange(C,I,Y, ncol=3)
+
+```
+
+
+```{r FDR for mismatched recomb rate calls}
+# FDR: FD/(TD+FD)
+# TPR: TP/(TP+FN)
+
+setwd('~/DATALab/NeanderthalSeq/IBDmix/GenomicDistance_test/Deni/Gen_Dist_callset/')
+
+YRI_map <- fread('matching_recomb_map/denisovan_1kg_YRI_ALL.LOD4.0.05cM.bed', col.names = c('ID', 'strt','end','cM_len','bp_len','LOD'))
+
+CHB_map <- fread(cmd = 'bedmap --ec --delim "\t" --echo --indicator --bases CHB_recomb_map/deni_1kg_YRI_ALL.CHB_map.LOD4.0.05cM.bed matching_recomb_map/deni_1kg_YRI_ALL.LOD4.0.05cM.bed', col.names = c('ID', 'strt','end','cM_len','bp_len','LOD','indicator','bp_overlap'))
+  
+IBS_map <- fread(cmd = 'bedmap --ec --delim "\t" --echo --indicator --bases IBS_recomb_map/deni_1kg_YRI_ALL.IBS_map.LOD4.0.05cM.bed matching_recomb_map/deni_1kg_YRI_ALL.LOD4.0.05cM.bed', col.names = c('ID', 'strt','end','cM_len','bp_len','LOD','indicator','bp_overlap'))
+
+
+HapMap_map <- fread(cmd = 'bedmap --ec --delim "\t" --echo --indicator --bases HapMap_recomb_map/deni_1kg_YRI_ALL.HapMap_map.LOD4.0.05cM.bed matching_recomb_map/deni_1kg_YRI_ALL.LOD4.0.05cM.bed', col.names = c('ID', 'strt','end','cM_len','bp_len','LOD','indicator','bp_overlap'))
+
+
+p.bp <- ggplot() + theme_classic() +
+  #geom_density(data=HapMap_map, aes(x=log10(bp_len), y=..count.., fill='HapMap_map'), alpha=0.75) +
+  geom_density(data=CHB_map, aes(x=log10(bp_len), y=..count.., fill='CHB_map'), alpha=0.75) +
+  geom_density(data=IBS_map, aes(x=log10(bp_len), y=..count.., fill='IBS_map'), alpha=0.75) +
+  geom_density(data=YRI_map, aes(x=log10(bp_len), y=..count.., fill='YRI_map'), alpha=0.75) +
+  
+  # geom_vline(xintercept = log10(median(HapMap_map$bp_len)), linetype='dashed', color='darkgreen')+
+  # geom_vline(xintercept = log10(median(CHB_map$bp_len)), linetype='dashed', color='darkred')+
+  # geom_vline(xintercept = log10(median(IBS_map$bp_len)), linetype='dashed', color='dodgerblue')+
+  # geom_vline(xintercept = log10(median(YRI_map$bp_len)), linetype='dashed', color='purple')+
+  theme()
+
+p.cM <- ggplot() + theme_classic() +
+  #geom_density(data=HapMap_map, aes(x=log10(cM_len), y=..count.., fill='HapMap_map'), alpha=0.75) +
+  geom_density(data=CHB_map, aes(x=log10(cM_len), y=..count.., fill='CHB_map'), alpha=0.75) +
+  geom_density(data=IBS_map, aes(x=log10(cM_len), y=..count.., fill='IBS_map'), alpha=0.75) +
+  geom_density(data=YRI_map, aes(x=log10(cM_len), y=..count.., fill='YRI_map'), alpha=0.75) +
+  
+  # geom_vline(xintercept = log10(median(HapMap_map$cM_len)), linetype='dashed', color='darkgreen')+
+  # geom_vline(xintercept = log10(median(CHB_map$cM_len)), linetype='dashed', color='darkred')+
+  # geom_vline(xintercept = log10(median(IBS_map$cM_len)), linetype='dashed', color='dodgerblue')+
+  # geom_vline(xintercept = log10(median(YRI_map$cM_len)), linetype='dashed', color='purple')+
+  coord_cartesian(xlim=c(log10(0.04),0)) +
+  theme()
+
+
+p.LOD <- ggplot() + theme_classic() +
+  #geom_density(data=HapMap_map, aes(x=log10(LOD), y=..count.., fill='HapMap_map'), alpha=0.75) +
+  geom_density(data=CHB_map, aes(x=log10(LOD), y=..count.., fill='CHB_map'), alpha=0.75) +
+  geom_density(data=IBS_map, aes(x=log10(LOD), y=..count.., fill='IBS_map'), alpha=0.75) +
+  
+  geom_density(data=YRI_map, aes(x=log10(LOD), y=..count.., fill='YRI_map'), alpha=0.75) +
+  theme()
+
+
+grid.arrange(p.bp, p.cM, p.LOD)
+
+
+data.table(CHB_map %>% summarise(sum(bp_len)/1000000/108), 
+           IBS_map %>% summarise(sum(bp_len)/1000000/108), 
+           HapMap_map %>% summarise(sum(bp_len)/1000000/108))
+
+CHB_map.FDR <- (CHB_map[indicator==0] %>% nrow()) / ( CHB_map[indicator==0] %>% nrow() + CHB_map[indicator==1] %>% nrow() )
+
+IBS_map.FDR <- (IBS_map[indicator==0] %>% nrow()) / ( IBS_map[indicator==0] %>% nrow() + IBS_map[indicator==1] %>% nrow() )
+
+HapMap_map.FDR <- (HapMap_map[indicator==0] %>% nrow()) / ( HapMap_map[indicator==0] %>% nrow() + HapMap_map[indicator==1] %>% nrow() )
+
+data.table(CHB_map.FDR, IBS_map.FDR, HapMap_map.FDR)
+
+
+
+CHB_map.FDR_bp <- (CHB_map[indicator==0] %>% summarise(sum(bp_len))) / ( CHB_map[indicator==0] %>% summarise(sum(bp_len)) + CHB_map[indicator==1] %>% summarise(sum(bp_overlap)) )
+
+IBS_map.FDR_bp <- (IBS_map[indicator==0] %>% summarise(sum(bp_len))) / ( IBS_map[indicator==0] %>% summarise(sum(bp_len)) + IBS_map[indicator==1] %>% summarise(sum(bp_overlap)) )
+
+HapMap_map.FDR_bp <- (HapMap_map[indicator==0] %>% summarise(sum(bp_len))) / ( HapMap_map[indicator==0] %>% summarise(sum(bp_len)) + HapMap_map[indicator==1] %>% summarise(sum(bp_overlap)) )
+
+data.table(CHB_map.FDR_bp, IBS_map.FDR_bp, HapMap_map.FDR_bp)
+
+
+YRI_map <- fread(cmd = 'bedmap --ec --delim "\t" --echo --indicator --bases matching_recomb_map/deni_1kg_YRI_ALL.LOD4.0.05cM.bed CHB_recomb_map/deni_1kg_YRI_ALL.CHB_map.LOD4.0.05cM.bed | bedmap --ec --delim "\t" --echo --indicator --bases - IBS_recomb_map/deni_1kg_YRI_ALL.IBS_map.LOD4.0.05cM.bed | bedmap --ec --delim "\t" --echo --indicator --bases - HapMap_recomb_map/deni_1kg_YRI_ALL.HapMap_map.LOD4.0.05cM.bed', 
+                 col.names = c('ID', 'strt','end','cM_len','bp_len','LOD',
+                               'CHB_indicator','CHB_bp_overlap', 
+                               'IBS_indicator','IBS_bp_overlap', 
+                               'HapMap_indicator','HapMap_bp_overlap'))
+
+
+CHB_map.TPR <- (YRI_map[CHB_indicator==1] %>% nrow()) / ( YRI_map[CHB_indicator==0] %>% nrow() + YRI_map[CHB_indicator==1] %>% nrow() )
+
+
+IBS_map.TPR <- (YRI_map[IBS_indicator==1] %>% nrow()) / ( YRI_map[IBS_indicator==0] %>% nrow() + YRI_map[IBS_indicator==1] %>% nrow() )
+
+
+HapMap_map.TPR <- (YRI_map[HapMap_indicator==1] %>% nrow()) / ( YRI_map[HapMap_indicator==0] %>% nrow() + YRI_map[HapMap_indicator==1] %>% nrow() )
+
+data.table(CHB_map.TPR, IBS_map.TPR, HapMap_map.TPR)
+
+
+CHB_map.TPR_bp <- ( YRI_map[CHB_indicator==1] %>% summarise(sum(CHB_bp_overlap)) ) /
+                  ( (YRI_map[CHB_indicator==1] %>% summarise(sum(CHB_bp_overlap)))  + 
+                      (YRI_map[CHB_indicator==1] %>% summarise(sum(bp_len-CHB_bp_overlap))) + 
+                      (YRI_map[CHB_indicator==0] %>% summarise(sum(bp_len))) 
+                  )
+
+IBS_map.TPR_bp <- ( YRI_map[IBS_indicator==1] %>% summarise(sum(IBS_bp_overlap)) ) /
+                  ( (YRI_map[IBS_indicator==1] %>% summarise(sum(IBS_bp_overlap)))  + 
+                      (YRI_map[IBS_indicator==1] %>% summarise(sum(bp_len-IBS_bp_overlap))) + 
+                      (YRI_map[IBS_indicator==0] %>% summarise(sum(bp_len))) 
+                  )
+
+HapMap_map.TPR_bp <- ( YRI_map[HapMap_indicator==1] %>% summarise(sum(HapMap_bp_overlap)) ) /
+                  ( (YRI_map[HapMap_indicator==1] %>% summarise(sum(HapMap_bp_overlap)))  + 
+                      (YRI_map[HapMap_indicator==1] %>% summarise(sum(bp_len-HapMap_bp_overlap))) + 
+                      (YRI_map[HapMap_indicator==0] %>% summarise(sum(bp_len))) 
+                  )
+
+data.table(CHB_map.TPR_bp, IBS_map.TPR_bp, HapMap_map.TPR_bp)
+
+```
+
+
+
+
+
+
+

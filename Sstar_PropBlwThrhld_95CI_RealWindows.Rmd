@@ -118,15 +118,15 @@ Sstar.prop_blw_thrhld <- Prop_blw_thrhld.fn(callset = 'EUR_EAS_SAS', sample_size
 
 ```{r}
 
-Sstar.Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 1000, callset = 'EUR_EAS', sample_size =(1523*2), min_window = 5, quer_prop = 0.9)
+Sstar.Bootstrapped.prop_blw_thrhld <- CI.95.fn(reps = 5000, callset = 'EUR_EAS', sample_size =(1007*2), min_window = 5, quer_prop = 0.9)
 
 Sstar.CI <- data.table()
 for( i in seq(from=1, to=15, by=1)){
-  ci <- Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld %>% quantile(probs=c(0.025, 0.975), na.rm=TRUE)
+  ci <- Sstar.Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld %>% quantile(probs=c(0.025, 0.975), na.rm=TRUE)
   #ci <- t.test(Bootstrapped.prop_blw_thrhld[winsize==i]$prop_blw_thrhld)$conf.int[1:2]
-  CI <- rbind(CI, data.table(winsize=i, lower=ci[1], upper=ci[2]))
+  Sstar.CI <- rbind(Sstar.CI, data.table(winsize=i, lower=ci[1], upper=ci[2]))
 }
-Sstar.CI <- replace_na(CI,list(lower=0, upper=0))
+Sstar.CI <- replace_na(Sstar.CI,list(lower=0, upper=0))
 
 
 ```
